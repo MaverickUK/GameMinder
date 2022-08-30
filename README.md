@@ -25,6 +25,10 @@ Statistics about the number and playtime length of each game is held in the `!GM
 
 ## TODO 
 ### :green_heart: Now (MVP)
+* ✔️ ~Scrollable list of games~ 
+* ✔️ ~Launch game by pressing `enter`~
+* ✔️ ~Return to GameMinder when game exits~
+* ✔️ ~Minimize memory footprint~ 
 * Automatically scan for games on startup
 * ASCII modal on scanning ( `Scanning C:/games/...` )
 * Load `!GM_INFO.TXT` files into in memory record
