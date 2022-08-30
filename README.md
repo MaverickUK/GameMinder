@@ -38,7 +38,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Edit existing games in GameMinder
 * Delete games from GameMinder
 
-### :heart: Later (or never)
+### :heart: Later
 * Use CSV database with filename (& size?) to automatically detect games
 * Tie into igdb.com website (how?)
 
