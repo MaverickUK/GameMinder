@@ -39,6 +39,8 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Ordering of games list
 * Show current sort order
 * ASCII splash screen on start/exit
+* Log each gameplay date time & length to `!GM_LOG.TXT` file
+* Display game info & metrics in right panel
 
 ### :blue_heart: Next
 * Specifiy colour screens in config file
