@@ -43,8 +43,10 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Display game info & metrics in right panel
 
 ### :blue_heart: Next
-* Specifiy colour screens in config file
-* Add new games to be added in GameMinder
+* Config option: Press key to continue, after game exists
+* Config option: Hide debug text when executing a game
+* Config option: Specifiy colour themes
+* Allow new games to be added in GameMinder
 * Edit existing games in GameMinder
 * Delete games from GameMinder
 
