@@ -54,5 +54,5 @@ Statistics about the number and playtime length of each game is held in the `!GM
 
 ## :clap: Credits
 List the websites used to help build this
-* Memory stub
-* ASCII lookup
+* [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) - Allows execution of external program whilst leaving only a small 2K memory stub
+* [ASCII codes lookup](https://www.ascii-codes.com/)
