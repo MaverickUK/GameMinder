@@ -34,7 +34,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * ✔️ ~Return to GameMinder when game exits~
 * ✔️ ~Minimize memory footprint~ 
 * ✔️ 2022/09/01 ~Automatically scan for games on startup~ 
-* ASCII modal on scanning ( `Scanning C:/games/...` )
+* ✔️ 2022/09/05 ASCII modal on scanning ( `Scanning C:/games/...` )
 * ✔️ 2022/09/01 ~Load `!GM_INFO.TXT` files into in memory record~
 * Ordering of games list
 * Show current sort order
