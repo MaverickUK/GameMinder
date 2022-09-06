@@ -38,9 +38,11 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * ✔️ 2022/09/01 ~Load `!GM_INFO.TXT` files into in memory record~
 * Ordering of games list
 * Show current sort order
-* ASCII splash screen on start/exit
+* ✔️ 2022/09/05 ~ASCII splash screen on start~
+* ASCII splash screen on exit
 * Log each gameplay date time & length to `!GM_LOG.TXT` file
 * Display game info & metrics in right panel
+* ✔️ 2022/09/05 ~Load configuration from external file~
 
 ### :blue_heart: Next
 * Config option: Press key to continue, after game exists
