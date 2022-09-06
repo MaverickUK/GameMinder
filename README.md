@@ -55,6 +55,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 ### :heart: Later
 * Use CSV database with filename (& size?) to automatically detect games
 * Tie into igdb.com website (how?)
+* Optionally allow game meta data to stored centrally, rather than in individual game directories
 
 ## :clap: Credits
 List the websites used to help build this
