@@ -43,11 +43,17 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Log each gameplay date time & length to `!GM_LOG.TXT` file
 * ✔️ 2022/09/07 ~Display game info & metrics in right panel~
 * ✔️ 2022/09/05 ~Load configuration from external file~
+* If no games found on startup, show help message and exit
 
 ### :blue_heart: Next
+* Increase the max games limit from 100
+* Automatically load mouse driver, for games that require a mouse
+* Config option: Default sort mode on startup
+* Config option: Disable play stats tracking
+* Config option: Default display mode on startup
 * Config option: Press key to continue, after game exists
-* Config option: Hide debug text when executing a game
-* Config option: Specifiy colour themes
+* ✔️ 2022/09/09 ~Config option: Specifiy colour themes~
+* Filtering: Enter first X characters of game name to filter list
 * Allow new games to be added in GameMinder
 * Edit existing games in GameMinder
 * Delete games from GameMinder
