@@ -1,7 +1,7 @@
 # GameMinder
 ## :video_game: A lightweight DOS games launcher to let you easily find and launch your games
 
-[![GameMinder UI](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw)](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw)
+[![GameMinder UI](GameMinder_v0-1-0.jpg)]([http://google.com.au/](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw))
 
 GameMinder was created after I took a holiday in Summer 2022 with my [Toshiba Libretto 100CT](https://www.strifestreams.com/search/libretto) and found navigating through DOS and attempting to identify all my names purely through 8 character file and directory names a little tricky. I also had issues remembering which of my games were just demos, weren't setup or ran with issues.
 
