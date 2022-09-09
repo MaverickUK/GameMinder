@@ -54,6 +54,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Config option: Disable play stats tracking
 * Config option: Default display mode on startup
 * Config option: Press key to continue, after game exists
+* Config option: Specify datetime formatting
 * ✔️ 2022/09/09 ~Config option: Specifiy colour themes~
 * Filtering: Enter first X characters of game name to filter list
 * Allow new games to be added in GameMinder
