@@ -53,7 +53,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Delete games from GameMinder
 
 ### :heart: Later
-* Use CSV database with filename (& size?) to automatically detect games
+* Use CSV database with filename (& size?) to automatically detect games (Could this just be a shared Google Sheet which downloads as a CSV?)
 * Tie into igdb.com website (how?)
 * Optionally allow game meta data to stored centrally, rather than in individual game directories
 
