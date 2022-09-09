@@ -15,9 +15,12 @@ GameMinder also keeps track on when you've played a specific game and for how lo
 Written in Turbo Pascal 7 it makes use of a file named `!GM_INFO.TXT` existing within each of the game directories to hold the meta data about each game
 
 ```
-name: Commander Keen 1
-developer: id Software
-released: 1991
+name:Commander Keen 1
+developer:id Software
+year:1991
+genre:Platform
+video:EGA
+sound:PC Speaker
 ...
 ```
 
