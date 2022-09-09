@@ -21,7 +21,6 @@ year:1991
 genre:Platform
 video:EGA
 sound:PC Speaker
-...
 ```
 
 On startup GameMinder recursively searches a specific directory (e.g. `C:\GAMES`) for these files in order to create the games listing. This approach was choosen to make it easy to manage the game meta data externally to GameMinder.
