@@ -51,6 +51,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 ### :blue_heart: Next
 * Increase the max games limit from 100
 * Automatically load mouse driver, for games that require a mouse
+* Sort by play stats (Num of times, total play time)
 * Config option: Default sort mode on startup
 * ✔️ 2022/09/09 ~Config option: Disable play stats tracking~
 * Config option: Default display mode on startup
