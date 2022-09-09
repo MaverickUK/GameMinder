@@ -42,7 +42,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * ✔️ 2022/09/07 ~Show current sort order~
 * ✔️ 2022/09/05 ~ASCII splash screen on start~
 * ASCII splash screen on exit
-* Log each gameplay date time & length to `!GM_LOG.TXT` file
+* ✔️ 2022/09/09 ~Log each gameplay date time & length to `!GM_LOG.TXT` file~
 * ✔️ 2022/09/07 ~Display game info & metrics in right panel~
 * ✔️ 2022/09/05 ~Load configuration from external file~
 * If no games found on startup, show help message and exit
