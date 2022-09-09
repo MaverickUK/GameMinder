@@ -52,7 +52,7 @@ Statistics about the number and playtime length of each game is held in the `!GM
 * Increase the max games limit from 100
 * Automatically load mouse driver, for games that require a mouse
 * Config option: Default sort mode on startup
-* Config option: Disable play stats tracking
+* ✔️ 2022/09/09 ~Config option: Disable play stats tracking~
 * Config option: Default display mode on startup
 * Config option: Press key to continue, after game exists
 * Config option: Specify datetime formatting
