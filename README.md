@@ -29,44 +29,7 @@ When is a game is launched GameMinder saves itself into EMS memory or to disk le
 
 Statistics about the number and playtime length of each game is held in the `!GM_LOG.TXT` file in each game directory. Each line in the file represents a game launch with the date and time, following by the playtime in seconds (if successfully completed).
 
-## TODO 
-### :green_heart: Now (MVP)
-* ✔️ ~Scrollable list of games~ 
-* ✔️ ~Launch game by pressing `enter`~
-* ✔️ ~Return to GameMinder when game exits~
-* ✔️ ~Minimize memory footprint~ 
-* ✔️ 2022/09/01 ~Automatically scan for games on startup~ 
-* ✔️ 2022/09/05 ~ASCII modal on scanning ( `Scanning C:/games/...` )~
-* ✔️ 2022/09/01 ~Load `!GM_INFO.TXT` files into in memory record~
-* ✔️ 2022/09/07 ~Ordering of games list~
-* ✔️ 2022/09/07 ~Show current sort order~
-* ✔️ 2022/09/05 ~ASCII splash screen on start~
-* ✔️ 2022/09/09 ~Log each gameplay date time & length to `!GM_LOG.TXT` file~
-* ✔️ 2022/09/07 ~Display game info & metrics in right panel~
-* ✔️ 2022/09/05 ~Load configuration from external file~
-* ✔️ 2022/09/09 ~If no games found on startup, show help message and exit~
-* ASCII splash screen on exit
-* Fix major bugs
-
-### :blue_heart: Next
-* Increase the max games limit from 100
-* Automatically load mouse driver, for games that require a mouse
-* Sort by play stats (Num of times, total play time)
-* Config option: Default sort mode on startup
-* ✔️ 2022/09/09 ~Config option: Disable play stats tracking~
-* Config option: Default display mode on startup
-* Config option: Press key to continue, after game exists
-* Config option: Specify datetime formatting
-* ✔️ 2022/09/09 ~Config option: Specifiy colour themes~
-* Filtering: Enter first X characters of game name to filter list
-* Allow new games to be added in GameMinder
-* Edit existing games in GameMinder
-* Delete games from GameMinder
-
-### :heart: Later
-* Use CSV database with filename (& size?) to automatically detect games (Could this just be a shared Google Sheet which downloads as a CSV?)
-* Tie into igdb.com website (how?)
-* Optionally allow game meta data to stored centrally, rather than in individual game directories
+## [Roadmap](https://github.com/MaverickUK/GameMinder/wiki)
 
 ## :clap: Credits
 List the websites used to help build this
