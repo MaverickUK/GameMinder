@@ -11,24 +11,7 @@ The UI is a tribute to [PathMinder](https://en.wikipedia.org/wiki/PathMinder) wh
 
 GameMinder also keeps track on when you've played a specific game and for how long. This is used to provide you with statistics and allow sorting of your games by popularity.
 
-## :computer: Implementation
-Written in Turbo Pascal 7 it makes use of a file named `!GM_INFO.TXT` existing within each of the game directories to hold the meta data about each game
-
-```
-name:Commander Keen 1
-developer:id Software
-year:1991
-genre:Platform
-video:EGA
-sound:PC Speaker
-```
-
-On startup GameMinder recursively searches a specific directory (e.g. `C:\GAMES`) for these files in order to create the games listing. This approach was choosen to make it easy to manage the game meta data externally to GameMinder.
-
-When is a game is launched GameMinder saves itself into EMS memory or to disk leaving only a 2K stub behind in order to relaunch GameMinder once the game has finished executing.
-
-Statistics about the number and playtime length of each game is held in the `!GM_LOG.TXT` file in each game directory. Each line in the file represents a game launch with the date and time, following by the playtime in seconds (if successfully completed).
-
+## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
 ## [Roadmap](https://github.com/MaverickUK/GameMinder/wiki)
 
 ## :clap: Credits
