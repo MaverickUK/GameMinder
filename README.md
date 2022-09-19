@@ -11,10 +11,11 @@ The UI is a tribute to [PathMinder](https://en.wikipedia.org/wiki/PathMinder) wh
 
 GameMinder also keeps track on when you've played a specific game and for how long. This is used to provide you with statistics and allow sorting of your games by popularity.
 
-## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
+## [Changelog](https://github.com/MaverickUK/GameMinder/wiki/Changelog)
 ## 🗺️ [Roadmap](https://github.com/MaverickUK/GameMinder/wiki)
+## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
 
 ## :clap: Credits
-List the websites used to help build this
+Helpful resources used in the creation of GameMinder
 * [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) - Allows execution of external program whilst leaving only a small 2K memory stub
 * [ASCII codes lookup](https://www.ascii-codes.com/)
