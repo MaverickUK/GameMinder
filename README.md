@@ -18,6 +18,7 @@ GameMinder also keeps track on when you've played a specific game and for how lo
 ## :clap: Credits
 Helpful resources used in the creation of GameMinder
 * [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) - Allows execution of external program whilst leaving only a small 2K memory stub
+* [Vogons](https://www.vogons.org/viewtopic.php?p=1100857) for motivation support and testing
 
 ### Useful resources
 * [ASCII codes lookup](https://www.ascii-codes.com/)
