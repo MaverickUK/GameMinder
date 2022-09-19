@@ -12,7 +12,7 @@ The UI is a tribute to [PathMinder](https://en.wikipedia.org/wiki/PathMinder) wh
 GameMinder also keeps track on when you've played a specific game and for how long. This is used to provide you with statistics and allow sorting of your games by popularity.
 
 ## 📑 [Changelog](https://github.com/MaverickUK/GameMinder/wiki/Changelog)
-## 🗺️ [Roadmap](https://github.com/MaverickUK/GameMinder/wiki)
+## 🗺️ [Roadmap](https://github.com/MaverickUK/GameMinder/wiki/Roadmap)
 ## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
 
 ## :clap: Credits
