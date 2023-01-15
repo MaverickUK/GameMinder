@@ -3,6 +3,8 @@
 
 [![GameMinder UI](GameMinder_v0-1-0.jpg)]([http://google.com.au/](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw))
 
+[Watch demo of GameMinder running on a 386 on YouTube](https://www.youtube.com/watch?v=UGUtVTo1mUQ&list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw&index=7)
+
 GameMinder was created after I took a holiday in Summer 2022 with my [Toshiba Libretto 100CT](https://www.strifestreams.com/search/libretto) and found navigating through DOS and attempting to identify all my names purely through 8 character file and directory names a little tricky. I also had issues remembering which of my games were just demos, weren't setup or ran with issues.
 
 Through these frustrations I decided to scratch this specific itch by creating a lightweight DOS games launcher which could store meta data about each of the games. This allows for games to be grouped by genre, released date or to just check if a particular game has been setup on your system.
