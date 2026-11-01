@@ -103,7 +103,7 @@ mkdir -p "$work/capture"
 #   browse, help (F1), status (F3), info (F2), full screen (F4), sort by year/played/name,
 #   type "keen" to filter, run Commander Keen 4 (a .BAT), quit it ("y"), check play stats,
 #   Esc clears the filter, Sort menu > Developer, Esc back, Theme x4 (Classic, Turbo,
-#   Commander, Amber), Esc exits
+#   Commander, Mono), Esc exits
 keys="down down down f1 , f3 , f2 f4 , f7 , f9 , f5 f2 k e e n , down , enter , , , y , f2 , esc right right enter right enter , esc right right right right right enter , enter , enter , enter , esc"
 
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy dosbox-x -fastlaunch -nomenu -exit -time-limit 180 \

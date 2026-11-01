@@ -6,7 +6,7 @@
 
 [![GameMinder demo: browsing, sorting, filtering and launching games](docs/gameminder-demo.gif)](docs/gameminder-demo.mp4)
 
-*GameMinder v0.2.0 in DOSBox-X: help, system status, full screen view, sorting, type-to-filter, and launching a game from a batch file, with play stats updated on return. [Watch as MP4](docs/gameminder-demo.mp4).*
+*GameMinder v0.4.0 in DOSBox-X: help, system status, full screen view, sorting, type-to-filter, launching a game from a batch file with play stats updated on return, and colour themes. [Watch as MP4](docs/gameminder-demo.mp4).*
 
 [Watch demo of GameMinder running on a 386 on YouTube](https://www.youtube.com/watch?v=UGUtVTo1mUQ&list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw&index=7)
 
