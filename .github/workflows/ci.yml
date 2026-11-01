@@ -123,28 +123,31 @@ jobs:
           printf 'ScanPath:D:\\GAMES\r\n' > SETTINGS.TXT
           printf 'ScanPath:D:\\MEMTEST\r\nVerboseOutput:true\r\nUseEmsForSwapFile:true\r\n' > SETEMS.TXT
           printf 'ScanPath:D:\\MEMTEST\r\nVerboseOutput:true\r\nUseEmsForSwapFile:false\r\n' > SETDISK.TXT
-          timeout 300 dosbox \
-            -c "mount c ." \
-            -c "mount d ../../tests/fixtures" \
-            -c "c:" \
-            -c "GAMEMIND.EXE /V > VER.TXT" \
-            -c "GAMEMIND.EXE /LIST > LIST.TXT" \
-            -c "TESTS.EXE D:\\ > TESTS.TXT" \
-            -c "MEMFREE.EXE C:\\BASE.TXT" \
-            -c "copy SETEMS.TXT SETTINGS.TXT" \
-            -c "GAMEMIND.EXE /RUN memory > RUNEMS.TXT" \
-            -c "ren VIAGM.TXT VIAEMS.TXT" \
-            -c "copy SETDISK.TXT SETTINGS.TXT" \
-            -c "GAMEMIND.EXE /RUN memory > RUNDISK.TXT" \
-            -c "ren VIAGM.TXT VIADISK.TXT" \
-            -c "exit"
+
+          # Run DOS commands in a fresh DOSBox, with C: = build/dos and D: = tests/fixtures
+          dos() {
+            local args=(-c "mount c ." -c "mount d ../../tests/fixtures" -c "c:")
+            for cmd in "$@"; do args+=(-c "$cmd"); done
+            timeout 60 dosbox "${args[@]}" -c "exit" > /dev/null 2>&1 || echo "DOSBox timed out running: $*"
+          }
+
+          dos "GAMEMIND.EXE /V > VER.TXT" "GAMEMIND.EXE /LIST > LIST.TXT" "TESTS.EXE D:\\ > TESTS.TXT"
+          dos "MEMFREE.EXE C:\\BASE.TXT"
+          dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNEMS.TXT" "ren VIAGM.TXT VIAEMS.TXT"
+          dos "copy SETDISK.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNDISK.TXT" "ren VIAGM.TXT VIADISK.TXT"
+
+      - name: Show results
+        if: always()
+        run: |
+          cd build/dos
+          for f in VER LIST TESTS BASE RUNEMS VIAEMS RUNDISK VIADISK; do
+            echo "--- $f.TXT"; cat "$f.TXT" 2>/dev/null || echo "(missing)"
+          done
+          echo "--- !GM_LOG.TXT"; cat '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT' 2>/dev/null || echo "(missing)"
 
       - name: Check results
         run: |
           cd build/dos
-          echo "--- VER.TXT";   cat VER.TXT
-          echo "--- LIST.TXT";  cat LIST.TXT
-          echo "--- TESTS.TXT"; cat TESTS.TXT
           grep -q "GameMinder v$(../../scripts/check-version.sh)" VER.TXT
           diff --strip-trailing-cr ../../tests/smoke/EXPECTED.TXT LIST.TXT
           grep -q " 0 failed" TESTS.TXT
@@ -152,8 +155,6 @@ jobs:
       - name: Check memory left for games
         run: |
           cd build/dos
-          echo "--- RUNEMS.TXT";  cat RUNEMS.TXT
-          echo "--- RUNDISK.TXT"; cat RUNDISK.TXT
           base=$(tr -d '\r ' < BASE.TXT)
           ems=$(tr -d '\r ' < VIAEMS.TXT)
           disk=$(tr -d '\r ' < VIADISK.TXT)
