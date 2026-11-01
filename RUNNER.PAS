@@ -85,6 +85,17 @@ begin
   WriteScript := ( IOResult = 0 );
 end;
 
+function FileExists(fileName:string):boolean;
+var
+  S:SearchRec;
+begin
+  FindFirst(fileName, ReadOnly + Hidden + SysFile + Archive, S);
+  FileExists := ( DosError = 0 );
+  {$IFDEF FPC}
+  FindClose(S);
+  {$ENDIF}
+end;
+
 procedure DeleteFile(fileName:string);
 var
   f:File;
@@ -206,6 +217,22 @@ begin
   end;
 
   writeln('Starting ', PStr(game^.Name));
+
+  { Check the game is there first, so a failed launch isn't counted as a play }
+  if not FileExists(GameProgram(PStr(game^.Path), PStr(game^.Exec))) then begin
+    TextColor(LightRed);
+    writeln('');
+    writeln('Unable to run ', GameProgram(PStr(game^.Path), PStr(game^.Exec)));
+    writeln(DosErrorText(2));
+    TextColor(White);
+    if ( interactive ) then begin
+      writeln('');
+      writeln('Press any key to return to GameMinder');
+      ReadKey;
+    end;
+    LaunchGame := 2; { File not found }
+    exit;
+  end;
 
   if ( useScript ) then begin
     if not CheckMemory(game, ScriptOverheadKB, interactive) then begin

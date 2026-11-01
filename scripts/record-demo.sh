@@ -56,10 +56,16 @@ games = [
     ('SC2000', 'SimCity 2000', 'SC2000.EXE', 'Maxis', '1993', 'Simulation', 'SVGA', 'Sound Blaster', 5, 940),
 ]
 
+shareware = {'KEEN1', 'KEEN4', 'DOOM', 'WOLF3D', 'JAZZ', 'TYRIAN', 'OMF'}
+memory = {'KEEN4': 520, 'DOOM': 560, 'XCOM': 590}
+
 random.seed(7)
 for d, name, exe, dev, year, genre, video, sound, plays, minutes in games:
-    write(f'{c}/GAMES/{d}/!GM_INFO.TXT',
-          f'name:{name}\nexec:{exe}\ndeveloper:{dev}\nyear:{year}\ngenre:{genre}\nvideo:{video}\nsound:{sound}\n')
+    info = f'name:{name}\nexec:{exe}\ndeveloper:{dev}\nyear:{year}\ngenre:{genre}\nvideo:{video}\nsound:{sound}\n'
+    info += 'type:Shareware\n' if d in shareware else 'type:Full\n'
+    if d in memory:
+        info += f'memory:{memory[d]}\n'
+    write(f'{c}/GAMES/{d}/!GM_INFO.TXT', info)
     # Made up play history, so the stats and play sorts have something to show
     if plays:
         lines, left = [], minutes
@@ -89,18 +95,21 @@ choice /c:yn /n >nul
 EOF
 
 cp "$exe" "$work/c/GMIND/GAMEMIND.EXE"
+cp "$repo/THEMES.TXT" "$work/c/GMIND/THEMES.TXT"
 mkdir -p "$work/capture"
 
-# Each key is pressed 1.1s apart, "," adds an extra pause:
+# Each key is pressed 1.2s apart, "," adds an extra pause. Keep the autotype command
+# under 255 characters, or DOSBox-X ignores the end of it:
 #   browse, help (F1), status (F3), info (F2), full screen (F4), sort by year/played/name,
 #   type "keen" to filter, run Commander Keen 4 (a .BAT), quit it ("y"), check play stats,
-#   Esc clears the filter, Sort menu > Developer, Esc back, Esc exits
-keys="down down down pagedown home f1 , f3 , f2 f4 , f7 , f9 , f5 f2 k e e n , down , enter , , , y , f2 , , esc , right right enter , right enter , , esc esc"
+#   Esc clears the filter, Sort menu > Developer, Esc back, Theme x4 (Classic, Turbo,
+#   Commander, Amber), Esc exits
+keys="down down down f1 , f3 , f2 f4 , f7 , f9 , f5 f2 k e e n , down , enter , , , y , f2 , esc right right enter right enter , esc right right right right right enter , enter , enter , enter , esc"
 
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy dosbox-x -fastlaunch -nomenu -exit -time-limit 150 \
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy dosbox-x -fastlaunch -nomenu -exit -time-limit 180 \
   -set "dosbox captures=$work/capture" \
   -c "mount c $work/c" -c "c:" -c "cls" -c "cd \\GMIND" \
-  -c "autotype -w 4 -p 1.1 $keys" \
+  -c "autotype -w 4 -p 1.2 $keys" \
   -c "dx-capture /v GAMEMIND.EXE" > "$work/dosbox.log" 2>&1
 
 avi=$(ls "$work"/capture/*.avi)

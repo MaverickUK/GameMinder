@@ -26,6 +26,7 @@ type
 procedure BuildLaunchCommand(path:string; exec:string; comSpec:string; var prog:string; var args:string);
 procedure BuildLaunchScript(path:string; exec:string; before:string; after:string; var script:TLaunchScript);
 function NeedsLaunchScript(before:string; after:string):boolean;
+function GameProgram(path:string; exec:string):string;
 
 { --------- implementation --------- }
 implementation
@@ -74,6 +75,15 @@ begin
     prog := program_;
     args := extraArgs;
   end;
+end;
+
+{ Full path of the game's program (EXE, COM or BAT), without arguments }
+function GameProgram(path:string; exec:string):string;
+var
+  program_,extraArgs:string;
+begin
+  ResolveProgram(path, exec, program_, extraArgs);
+  GameProgram := program_;
 end;
 
 function NeedsLaunchScript(before:string; after:string):boolean;

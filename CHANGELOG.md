@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
-## [0.4.0] - Unreleased
+## [0.4.0] - 2026-11-01
 
 ### Added
 - Colour themes, defined one per line in `THEMES.TXT` next to `GAMEMIND.EXE`. Choose one with **Theme** in the menu - the choice is remembered in `SETTINGS.TXT`
 - Seven themes to start with: Classic, Turbo, Commander, Mono, Amber, Phosphor and Hot Dog Stand
+- README demo shows themes and the type field
+
+### Fixed
+- A game that fails to start because its program is missing is no longer counted as played
 
 ## [0.3.0] - 2026-11-01
 
