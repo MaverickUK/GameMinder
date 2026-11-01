@@ -21,9 +21,6 @@ DefaultSort:Name
 ; Startup right hand panel: Help, Info, Status, Full
 DefaultView:Info
 
-; Screen lines: 25, or 50 for more games on screen (43 on EGA, 50 on VGA)
-ScreenLines:25
-
 ; Screen row the highlighted game is shown on, 0 = middle of the list
 HighlightedRow:0
 

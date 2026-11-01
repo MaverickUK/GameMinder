@@ -52,7 +52,7 @@ var
 
 { --------- public --------- }
 
-{ Switch to the text mode for the ScreenLines setting, 43/50 lines use the 8x8 font }
+{ Switch to the text mode for ScreenLines, 43/50 lines use the 8x8 font }
 procedure ApplyScreenMode;
 begin
   if ( ScreenLines > 25 ) and ( (StartupVideoMode and $FF) <> Mono ) then begin

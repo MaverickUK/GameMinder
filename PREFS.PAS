@@ -36,7 +36,7 @@ var
   ScanPath:string[70];
   InfoFileName:string[12];
   HighlightedRow:word; { 0 = middle of the list }
-  ScreenLines:word;    { 25, or 43/50 for EGA/VGA 8x8 font }
+  ScreenLines:word;    { 25, or 50 (43 on EGA) with GAMEMIND /50 }
   DelayAfterGameExit:word;
   DelayOnStartup:word;
   BlankLineFilter:string[30];
@@ -91,7 +91,6 @@ begin
   ScanPath := NormalizeDir(GetConfigString('ScanPath', 'C:\GAMES\'));
   InfoFileName := GetConfigString('InfoFileName', '!GM_INFO.TXT');
   HighlightedRow := GetConfigInt('HighlightedRow', 0);
-  ScreenLines := GetConfigInt('ScreenLines', 25);
   DelayAfterGameExit := GetConfigInt('DelayAfterGameExit', 0);
   DelayOnStartup := GetConfigInt('DelayOnStartup', 0);
   BlankLineFilter := GetConfigString('BlankLineFilter', '');
@@ -132,5 +131,6 @@ end;
 begin
   ApplicationName := 'GameMinder v' + AppVersion;
   ExeDir := DirOfPath(ParamStr(0));
+  ScreenLines := 25; { Set by the /50 command line switch }
   LoadSettings; { Defaults until LoadSettingsFile is called }
 end.

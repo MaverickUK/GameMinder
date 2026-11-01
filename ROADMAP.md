@@ -22,7 +22,7 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Split GAMEMIND.PAS into units~~ (0.3.0)
 - ~~Remember games between runs, with a rescan option~~ (0.3.0, `GMCACHE.TXT`, Rescan menu option and `/SCAN`)
 - ~~Type of game: full, demo, shareware, freeware~~ (0.3.0, `type:`)
-- ~~More rows on screen~~ (0.3.0, `ScreenLines:50`)
+- ~~More rows on screen~~ (0.3.0, `GAMEMIND /50`)
 - ~~Warn when a game needs more memory than is free~~ (0.3.0, `memory:`)
 - Configure which columns are shown in half and full screen mode, and their widths, in `SETTINGS.TXT`
 - ASCII splash screen on exit

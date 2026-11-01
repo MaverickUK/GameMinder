@@ -136,8 +136,9 @@ procedure ShowUsage;
 begin
   writeln(ApplicationName, ' - DOS games launcher');
   writeln('');
-  writeln('GAMEMIND [/SCAN] [/LIST] [/RUN name] [/V] [/?]');
+  writeln('GAMEMIND [/50] [/SCAN] [/LIST] [/RUN name] [/V] [/?]');
   writeln('');
+  writeln('  /50        Show 50 lines on VGA (43 on EGA), for more games on screen');
   writeln('  /SCAN      Scan for games rather than using the saved list');
   writeln('  /LIST      Print the games found and exit');
   writeln('  /RUN name  Run the first game whose name contains name, then exit');
@@ -164,6 +165,8 @@ begin
       writeln(ApplicationName);
       Halt(0);
     end
+    else if ( param = '/50' ) or ( param = '-50' ) or ( param = '/43' ) or ( param = '-43' ) then
+      ScreenLines := 50
     else if ( param = '/SCAN' ) or ( param = '-SCAN' ) then
       ForceScan := true
     else if ( param = '/LIST' ) or ( param = '-LIST' ) then

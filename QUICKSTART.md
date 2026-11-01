@@ -90,7 +90,6 @@ All configurable options are in this file, with a comment explaining each one, s
 | Setting | |
 |---|---|
 | `ScanPath` | Directory to search for games |
-| `ScreenLines` | `50` for 50 lines on VGA (43 on EGA), showing more games |
 | `CacheGames` | `false` to scan for games every time GameMinder starts |
 | `MaxGames` | Most games to load (default 1,000, up to 16,000) |
 | `DefaultSort` | Sort order on startup: `Name`, `Developer`, `Year`, `Genre`, `Type`, `TimesPlayed` or `TimePlayed` |
@@ -104,6 +103,7 @@ If `SETTINGS.TXT` is missing, GameMinder uses the defaults. It must be in the sa
 
 | | |
 |---|---|
+| `GAMEMIND /50` | Show 50 lines on VGA (43 on EGA), for more games on screen. Combine with other switches, e.g. `GAMEMIND /50 /SCAN` |
 | `GAMEMIND /SCAN` | Scan for games rather than using the saved list, can be used with `/LIST` and `/RUN` |
 | `GAMEMIND /V` | Show the version |
 | `GAMEMIND /LIST` | Print the games found and exit, e.g. `GAMEMIND /LIST > GAMES.TXT` |
