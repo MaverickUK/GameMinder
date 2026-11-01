@@ -1,0 +1,3 @@
+; Used by CI to measure memory left for games - see tests/MEMFREE.PAS
+name:Memory Test
+exec:C:\MEMFREE.EXE C:\VIAGM.TXT

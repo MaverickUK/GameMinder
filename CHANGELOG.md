@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.2.1] - 2026-11-01
+
+### Fixed
+- The 0.2.0 download kept GameMinder in memory while a game ran, leaving games less conventional memory. GameMinder now swaps itself out to EMS or disk again, leaving only a ~2KB stub - games get within a few KB of the memory free at the DOS prompt
+
+### Added
+- `/RUN name` command line switch to run a game directly, e.g. `GAMEMIND /RUN keen`
+- ExecSwap ported to Free Pascal (`EXECSWAP/FPC`), so builds from GitHub Actions swap the same way as Turbo Pascal builds
+- CI measures the memory a game gets when run through GameMinder, swapping to EMS and to disk, against the DOS prompt
+
 ## [0.2.0] - 2026-11-01
 
 ### Added
@@ -67,5 +77,6 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.2.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.1
 [0.2.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.0
 [0.1.0]: https://github.com/MaverickUK/GameMinder/releases/tag/0.1.0

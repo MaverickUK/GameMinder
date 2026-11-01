@@ -66,14 +66,30 @@ jobs:
           echo "Units:    $UNITS"
           ls "$UNITS"
           mkdir -p build/dos
+
+          # ExecSwap's swapping core, linked into the startup code segment
+          nasm -f obj -o EXECSWAP/FPC/SWAPCORE.OBJ EXECSWAP/FPC/SWAPCORE.ASM
+
           build() {
             "$PPC" -Tmsdos -WmLarge -Mtp -O2 \
-              -Fu. -Fu"$UNITS/*" \
-              -FUbuild/dos -o"$2" "$1"
+              -Fu. -FuEXECSWAP/FPC -FoEXECSWAP/FPC -Fu"$UNITS/*" \
+              -Xm -FUbuild/dos -o"$2" "$1"
           }
           build GAMEMIND.PAS build/dos/GAMEMIND.EXE
           build tests/TESTS.PAS build/dos/TESTS.EXE
+          build tests/MEMFREE.PAS build/dos/MEMFREE.EXE
           ls -l build/dos/*.EXE
+
+      - name: Show memory layout
+        run: |
+          # ExecSwap keeps everything below FirstToSave in memory while a game runs,
+          # so it should be in the first code segment
+          map=$(ls build/dos/*.map build/*.map GAMEMIND.map 2>/dev/null | grep -i gamemind | head -1 || true)
+          if [ -n "$map" ]; then
+            grep -iE -m 40 "_TEXT|DGROUP|STACK|FirstToSave|ExecSwapCore|Segment|Group" "$map" || head -60 "$map"
+          else
+            echo "No map file found"; ls build/dos
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -81,6 +97,7 @@ jobs:
           path: |
             build/dos/GAMEMIND.EXE
             build/dos/TESTS.EXE
+            build/dos/MEMFREE.EXE
 
   dos-smoke:
     name: Smoke test in DOSBox
@@ -102,25 +119,63 @@ jobs:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
         run: |
-          printf 'ScanPath:D:\\GAMES\r\n' > build/dos/SETTINGS.TXT
-          timeout 300 dosbox \
-            -c "mount c build/dos" \
-            -c "mount d tests/fixtures" \
-            -c "c:" \
-            -c "GAMEMIND.EXE /V > VER.TXT" \
-            -c "GAMEMIND.EXE /LIST > LIST.TXT" \
-            -c "TESTS.EXE D:\\ > TESTS.TXT" \
-            -c "exit"
+          cd build/dos
+          printf 'ScanPath:D:\\GAMES\r\n' > SETTINGS.TXT
+          printf 'ScanPath:D:\\MEMTEST\r\nVerboseOutput:true\r\nUseEmsForSwapFile:true\r\n' > SETEMS.TXT
+          printf 'ScanPath:D:\\MEMTEST\r\nVerboseOutput:true\r\nUseEmsForSwapFile:false\r\n' > SETDISK.TXT
+
+          # Run DOS commands in a fresh DOSBox, with C: = build/dos and D: = tests/fixtures.
+          # Commands go in a batch file, as DOSBox only runs the first few -c options.
+          dos() {
+            : > SESSION.BAT
+            for cmd in "$@"; do printf '%s\r\n' "$cmd" >> SESSION.BAT; done
+            timeout 120 dosbox -c "mount c ." -c "mount d ../../tests/fixtures" -c "c:" \
+              -c "CALL SESSION.BAT" -c "exit" > /dev/null 2>&1 || echo "DOSBox timed out running: $*"
+          }
+
+          dos "GAMEMIND.EXE /V > VER.TXT" "GAMEMIND.EXE /LIST > LIST.TXT" "TESTS.EXE D:\\ > TESTS.TXT"
+          dos "MEMFREE.EXE C:\\BASE.TXT"
+          dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNEMS.TXT" "ren VIAGM.TXT VIAEMS.TXT"
+          dos "copy SETDISK.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNDISK.TXT" "ren VIAGM.TXT VIADISK.TXT"
+
+          # Everything again in one session, as a user would, checking GameMinder returns to DOS each time
+          dos "GAMEMIND.EXE /LIST > NUL" "TESTS.EXE D:\\ > NUL" "MEMFREE.EXE C:\\NUL.TXT" \
+              "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > NUL" "echo EMS > SESSION.TXT" \
+              "copy SETDISK.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > NUL" "echo DISK >> SESSION.TXT"
+
+      - name: Show results
+        if: always()
+        run: |
+          cd build/dos
+          for f in VER LIST TESTS BASE RUNEMS VIAEMS RUNDISK VIADISK SESSION; do
+            echo "--- $f.TXT"; cat "$f.TXT" 2>/dev/null || echo "(missing)"
+          done
+          echo "--- !GM_LOG.TXT"; cat '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT' 2>/dev/null || echo "(missing)"
 
       - name: Check results
         run: |
           cd build/dos
-          echo "--- VER.TXT";   cat VER.TXT
-          echo "--- LIST.TXT";  cat LIST.TXT
-          echo "--- TESTS.TXT"; cat TESTS.TXT
           grep -q "GameMinder v$(../../scripts/check-version.sh)" VER.TXT
           diff --strip-trailing-cr ../../tests/smoke/EXPECTED.TXT LIST.TXT
           grep -q " 0 failed" TESTS.TXT
+
+      - name: Check memory left for games
+        run: |
+          cd build/dos
+          base=$(tr -d '\r ' < BASE.TXT)
+          ems=$(tr -d '\r ' < VIAEMS.TXT)
+          disk=$(tr -d '\r ' < VIADISK.TXT)
+          echo "Free memory for a game: DOS prompt ${base}KB, via GameMinder ${ems}KB (EMS swap), ${disk}KB (disk swap)"
+          grep -q "bytes to EMS" RUNEMS.TXT
+          grep -q 'bytes to C:\\SWAP' RUNDISK.TXT
+          # ExecSwap leaves only a small stub, so a game should get within 8KB of the DOS prompt
+          [ $((base - ems)) -le 8 ]
+          [ $((base - disk)) -le 8 ]
+          # GameMinder was swapped back in correctly and logged every play
+          [ "$(grep -c '^>' '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT')" -eq 4 ]
+          [ "$(grep -c '^<' '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT')" -eq 4 ]
+          # ...and returned to DOS each time in a single session
+          grep -q EMS SESSION.TXT && grep -q DISK SESSION.TXT
 
   package:
     name: Package release zip
