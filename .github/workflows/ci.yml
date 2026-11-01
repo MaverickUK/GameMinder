@@ -53,7 +53,7 @@ jobs:
           tar xzf fpc-src.tar.gz
           make -C "fpc-${FPC_VERSION}" crossall crossinstall \
             CPU_TARGET=i8086 OS_TARGET=msdos \
-            CROSSOPT="-WmLarge -CX -XX" \
+            CROSSOPT="-WmLarge -CX -XX" BINUTILSPREFIX= \
             INSTALL_PREFIX="$HOME/fpc-msdos"
 
       - name: Build GAMEMIND.EXE and TESTS.EXE
