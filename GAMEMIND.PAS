@@ -1,9 +1,4 @@
 Program GameMind;
-{$IFDEF FPC}
-  { Free Pascal DOS builds use plain Exec rather than ExecSwap, so the heap
-    must be capped to leave memory free for games }
-  {$M 16384,0,196608}
-{$ENDIF}
 uses
     Objects,
     Dos,
@@ -13,12 +8,10 @@ uses
     Config,
     Games,
     Launch,
-    Screen
-    {$IFNDEF FPC}
-    { Launch external executable - Must keep ExecSwap last }
-    , ExecSwap
-    {$ENDIF}
-    ;
+    Screen,
+    { Launch external executable - Must keep ExecSwap last.
+      Turbo Pascal uses EXECSWAP.TPU, Free Pascal uses EXECSWAP\FPC\EXECSWAP.PAS }
+    ExecSwap;
 
 {$I VERSION.INC}
 
@@ -81,6 +74,7 @@ var
   ApplicationName:string[30];
   ExeDir:string;
   ListOnly:boolean; { /LIST - print games and exit }
+  RunName:string;   { /RUN - run the first game whose name contains this, then exit }
   StartupVideoMode:word;
 
   { User configurable settings }
@@ -593,12 +587,6 @@ begin
 
   VerboseWriteln('Executing ' + prog + ' ' + args);
 
-  {$IFDEF FPC}
-  SwapVectors;
-  Exec(prog, args);
-  SwapVectors;
-  Status := DosError;
-  {$ELSE}
   UseEmsIfAvailable := UseEmsForSwapFile;
 
   {function InitExecSwap(LastToSave : Pointer; SwapFileName : String) : Boolean;
@@ -608,14 +596,16 @@ begin
     Status := 8; { Not enough memory }
   end
   else begin
-    VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to ' + SwapFilePath);
+    if ( EmsAllocated ) then
+      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to EMS')
+    else
+      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to ' + SwapFilePath);
     writeln('');
     SwapVectors;
     Status := ExecWithSwap(prog, args);
     SwapVectors;
     ShutdownExecSwap;
   end;
-  {$ENDIF}
 
   VerboseWriteln('Changing directory back to ' + OriginalDir);
   {$I-}
@@ -626,10 +616,10 @@ begin
   Execute := Status;
 end;
 
-{ Start the currently selected game }
-procedure ExecuteGame;
+{ Run a game and record play stats. Interactive waits for a key after errors,
+  returns 0 on success or a DOS error code }
+function LaunchGame(game:PGame; interactive:boolean):word;
 var
-  game:PGame;
   prog,args:string;
   status:word;
   y,m,d,dow,h,min,s,hund:word;
@@ -637,21 +627,20 @@ var
   startMinute:word;
   playTimeMinutes:longint;
 begin
-  game := HighlightedGame;
-  if ( game = nil ) then exit;
-
   BuildLaunchCommand(PStr(game^.Path), PStr(game^.Exec), GetEnv('COMSPEC'), prog, args);
 
-  TextBackground(Black);
-  clrscr;
+  if ( interactive ) then begin
+    TextBackground(Black);
+    clrscr;
 
-  TextColor(White);
-  TextBackground(Blue);
-  DrawCenter('GameMinder');
+    TextColor(White);
+    TextBackground(Blue);
+    DrawCenter('GameMinder');
 
-  TextColor(White);
-  TextBackground(Black);
-  ShowCursor;
+    TextColor(White);
+    TextBackground(Black);
+    ShowCursor;
+  end;
 
   writeln('Starting ', PStr(game^.Name));
 
@@ -666,7 +655,7 @@ begin
   status := Execute(prog, args, PStr(game^.Path));
 
   { Games can leave the screen in a graphics mode }
-  TextMode(StartupVideoMode);
+  if ( interactive ) then TextMode(StartupVideoMode);
 
   if ( status <> 0 ) then begin
     TextColor(LightRed);
@@ -674,9 +663,11 @@ begin
     writeln('Unable to run ', prog, ' ', args);
     writeln(DosErrorText(status));
     TextColor(White);
-    writeln('');
-    writeln('Press any key to return to GameMinder');
-    ReadKey;
+    if ( interactive ) then begin
+      writeln('');
+      writeln('Press any key to return to GameMinder');
+      ReadKey;
+    end;
   end
   else begin
     if ( EnablePlayStats ) then begin
@@ -687,7 +678,7 @@ begin
       AppendPlayLog(game, PlayStatsFile_MinutesPlayedMarker + ConvertToString(playTimeMinutes));
     end;
 
-    if ( WaitForKeyAfterGame ) then begin
+    if ( WaitForKeyAfterGame ) and ( interactive ) then begin
       writeln('');
       writeln('Press any key to return to GameMinder');
       ReadKey;
@@ -698,6 +689,19 @@ begin
 
   { Reload game details, to include updated play stats }
   if ( EnablePlayStats ) then LoadPlayStats(game);
+
+  LaunchGame := status;
+end;
+
+{ Start the currently selected game }
+procedure ExecuteGame;
+var
+  game:PGame;
+begin
+  game := HighlightedGame;
+  if ( game = nil ) then exit;
+
+  LaunchGame(game, true);
 
   { Restart Gameminder UI }
   HideCursor;
@@ -720,11 +724,12 @@ procedure ShowUsage;
 begin
   writeln(ApplicationName, ' - DOS games launcher');
   writeln('');
-  writeln('GAMEMIND [/LIST] [/V] [/?]');
+  writeln('GAMEMIND [/LIST] [/RUN name] [/V] [/?]');
   writeln('');
-  writeln('  /LIST  Print the games found and exit');
-  writeln('  /V     Show version');
-  writeln('  /?     Show this help');
+  writeln('  /LIST      Print the games found and exit');
+  writeln('  /RUN name  Run the first game whose name contains name, then exit');
+  writeln('  /V         Show version');
+  writeln('  /?         Show this help');
 end;
 
 { Handle command line switches }
@@ -734,6 +739,7 @@ var
   param:string;
 begin
   ListOnly := false;
+  RunName := '';
 
   { Switches only produce text, so use DOS output rather than Crt,
     allowing it to be redirected e.g. GAMEMIND /LIST > GAMES.TXT }
@@ -742,7 +748,8 @@ begin
     Rewrite(Output);
   end;
 
-  for i := 1 to ParamCount do begin
+  i := 1;
+  while ( i <= ParamCount ) do begin
     param := UpStr(ParamStr(i));
     if ( param = '/V' ) or ( param = '-V' ) or ( param = '/VERSION' ) then begin
       writeln(ApplicationName);
@@ -750,11 +757,45 @@ begin
     end
     else if ( param = '/LIST' ) or ( param = '-LIST' ) then
       ListOnly := true
+    else if ( ( param = '/RUN' ) or ( param = '-RUN' ) ) and ( i < ParamCount ) then begin
+      inc(i);
+      RunName := ParamStr(i);
+    end
     else begin
       ShowUsage;
       if ( param = '/?' ) or ( param = '-?' ) or ( param = '/H' ) then Halt(0) else Halt(1);
     end;
+    inc(i);
   end;
+end;
+
+{ Load settings and scan for games without the UI, for /LIST and /RUN }
+procedure LoadGamesQuietly;
+begin
+  LoadSettingsFile;
+  InitGames(MaxGames);
+  PlayStatsEnabled := EnablePlayStats;
+  ScanForInfoFiles(ScanPath, InfoFileName);
+  SortGames(smName);
+end;
+
+{ /RUN - run a game by name without the UI, exit code is non-zero if it couldn't be run }
+procedure RunGame;
+var
+  status:word;
+begin
+  LoadGamesQuietly;
+  ApplyFilter(RunName);
+
+  if ( ViewCount = 0 ) then begin
+    writeln('No game found matching "', RunName, '"');
+    DoneGames;
+    Halt(1);
+  end;
+
+  status := LaunchGame(ViewGame(0), false);
+  DoneGames;
+  if ( status <> 0 ) then Halt(2);
 end;
 
 { /LIST - print games to standard output so it can be redirected to a file }
@@ -763,11 +804,7 @@ var
   i,found:integer;
   game:PGame;
 begin
-  LoadSettingsFile;
-  InitGames(MaxGames);
-  PlayStatsEnabled := EnablePlayStats;
-  ScanForInfoFiles(ScanPath, InfoFileName);
-  SortGames(smName);
+  LoadGamesQuietly;
 
   for i := 0 to ViewCount - 1 do begin
     game := ViewGame(i);
@@ -861,6 +898,11 @@ begin
 
   if ( ListOnly ) then begin
     ListGames;
+    Halt(0);
+  end;
+
+  if ( length(RunName) > 0 ) then begin
+    RunGame;
     Halt(0);
   end;
 

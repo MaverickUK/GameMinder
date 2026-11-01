@@ -5,3 +5,5 @@ dist/
 *.ow
 *.rst
 SWAP.$$$
+*.OBJ
+*.map
