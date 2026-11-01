@@ -256,13 +256,10 @@ begin
   Reset(playStatsFile);
   {$I+}
   if ( IOResult <> 0 ) then exit; { Never played }
-  VerboseWriteln('DEBUG stats opened');
 
   while not eof(playStatsFile) do begin
     readln(playStatsFile, line);
-    VerboseWriteln('DEBUG line ' + line);
     ApplyPlayStatsLine(game, line);
-    VerboseWriteln('DEBUG applied');
   end;
 
   Close(playStatsFile);
