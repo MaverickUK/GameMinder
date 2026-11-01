@@ -1,0 +1,7 @@
+name: Commander Keen 1
+exec:keen1.exe
+Developer:id software
+genre:Platform
+year:1991
+video:EGA
+sound:PC Speaker

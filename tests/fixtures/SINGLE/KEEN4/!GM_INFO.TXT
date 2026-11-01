@@ -1,0 +1,3 @@
+name:Commander Keen 4
+exec:keen4.exe
+developer:id software

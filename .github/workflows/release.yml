@@ -1,0 +1,58 @@
+name: Release
+
+# Push a tag matching VERSION.INC (e.g. v0.2.0) to build and create a draft release.
+# Review the draft on GitHub - attach a Turbo Pascal 7 build if preferred (see BUILD.md) - then publish.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches VERSION.INC
+        id: version
+        run: echo "version=$(scripts/check-version.sh "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: gamemind-dos
+          path: build/dos
+
+      - name: Package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p dist/GAMEMIND
+          cp build/dos/GAMEMIND.EXE SETTINGS.TXT README.md CHANGELOG.md LICENSE dist/GAMEMIND/
+          cp -r examples dist/GAMEMIND/EXAMPLES
+          (cd dist && zip -r "GameMinder-${VERSION}.zip" GAMEMIND)
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Release notes are this version's section of CHANGELOG.md
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            /^## \[/ { found = 0 }
+            found' CHANGELOG.md > notes.md
+
+          prerelease=""
+          if [[ "$VERSION" == *-* ]]; then prerelease="--prerelease"; fi
+
+          gh release create "$GITHUB_REF_NAME" "dist/GameMinder-${VERSION}.zip" \
+            --draft $prerelease \
+            --title "GameMinder ${VERSION}" \
+            --notes-file notes.md

@@ -1,0 +1,7 @@
+build/
+dist/
+*.o
+*.ppu
+*.ow
+*.rst
+SWAP.$$$

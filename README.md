@@ -1,7 +1,10 @@
 # GameMinder
 ## :video_game: A lightweight DOS games launcher to let you easily find and launch your games
 
-[![GameMinder UI](GameMinder_v0-1-0.jpg)]([http://google.com.au/](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw))
+[![CI](https://github.com/MaverickUK/GameMinder/actions/workflows/ci.yml/badge.svg)](https://github.com/MaverickUK/GameMinder/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/MaverickUK/GameMinder?include_prereleases&sort=semver)](https://github.com/MaverickUK/GameMinder/releases)
+
+[![GameMinder UI](GameMinder_v0-1-0.jpg)](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw)
 
 [Watch demo of GameMinder running on a 386 on YouTube](https://www.youtube.com/watch?v=UGUtVTo1mUQ&list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw&index=7)
 
@@ -15,14 +18,65 @@ GameMinder also keeps track on when you've played a specific game and for how lo
 
 [A series of videos showing the development are available on YouTube](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw)
 
-## 📑 [Changelog](https://github.com/MaverickUK/GameMinder/wiki/Changelog)
+## :rocket: Getting started
+
+1. Download the latest zip from [Releases](https://github.com/MaverickUK/GameMinder/releases) and copy `GAMEMIND.EXE` and `SETTINGS.TXT` to a directory on your DOS machine (real or virtual)
+2. Edit `SETTINGS.TXT` and set `ScanPath` to the directory holding your games. It's searched recursively on startup
+3. Add a `!GM_INFO.TXT` file to the directory of each game you want GameMinder to list
+4. Run `GAMEMIND`
+
+### !GM_INFO.TXT format
+
+A series of `key:value` lines. Lines starting with `;` are comments.
+
+| Key | |
+|---|---|
+| `name` | Name of the game (falls back to the directory name) |
+| `exec` | File to run: `.EXE`, `.COM` or `.BAT`, optionally followed by arguments **(required)** |
+| `developer` | Name of developer |
+| `genre` | Genre of game |
+| `year` | Year game was released |
+| `video` | VGA, EGA, CGA etc. |
+| `sound` | PC Speaker, Sound Blaster etc. |
+
+```
+name:Commander Keen 1
+exec:keen1.exe
+developer:id software
+genre:Platform
+year:1991
+video:EGA
+sound:PC Speaker
+```
+
+More examples are in [examples](examples). Every option in `SETTINGS.TXT` is documented in the [file itself](SETTINGS.TXT).
+
+### Controls
+
+| Key | |
+|---|---|
+| Up / Down, PgUp / PgDn, Home / End | Move through the games list |
+| Left / Right | Change the menu option |
+| Enter | Run the highlighted game (or the selected menu option) |
+| Type letters | Filter games by name, Backspace to edit |
+| Esc | Clear the filter, leave a sub-menu, or exit |
+| F1 / F2 / F3 / F4 | Help / game info / system status / full screen list |
+| F5 / F6 / F7 / F8 | Sort by name / developer / year / genre |
+| F9 / F10 | Sort by times played / time played |
+
+Command line: `GAMEMIND /V` shows the version, `GAMEMIND /LIST` prints the games found.
+
+## 📑 [Changelog](CHANGELOG.md)
 ## 🗺️ [Roadmap](https://github.com/MaverickUK/GameMinder/wiki/Roadmap)
 ## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
+## :hammer: [Building & testing](BUILD.md)
+
+GameMinder follows [Semantic Versioning](https://semver.org).
 
 ## :clap: Credits
 Helpful resources used in the creation of GameMinder
-* [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) - Allows execution of external program whilst leaving only a small 2K memory stub
-* [Vogons](https://www.vogons.org/viewtopic.php?p=1100857) for motivation support and testing
+* [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) by TurboPower Software - Allows execution of external program whilst leaving only a small 2K memory stub
+* [Vogons](https://www.vogons.org/viewtopic.php?t=89718) for motivation support and testing
 
 ### Useful resources
 * [ASCII codes lookup](https://www.ascii-codes.com/)

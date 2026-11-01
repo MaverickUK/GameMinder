@@ -1,0 +1,10 @@
+; Test settings
+ScanPath: D:\GAMES
+verboseoutput:TRUE
+DelayOnStartup:250
+ColorBackground:LightBlue
+ColorText:14
+ColorFrame:Purple
+EnablePlayStats:no
+DelayOnStartup:500
+BlankLineFilter:

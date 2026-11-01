@@ -1,0 +1,6 @@
+; Dune needs its batch file to pick the sound card
+name:Dune
+exec:dune.bat
+developer:Cryo
+genre:Strategy
+year:1992

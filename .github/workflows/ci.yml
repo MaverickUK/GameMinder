@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+env:
+  FPC_VERSION: 3.2.2
+
+jobs:
+  version:
+    name: Check version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/check-version.sh
+
+  unit-tests:
+    name: Unit tests (Free Pascal, Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Free Pascal
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fpc
+      - name: Build tests
+        run: mkdir -p build && fpc -Mtp -Fu. -FUbuild -obuild/tests tests/TESTS.PAS
+      - name: Run tests
+        run: build/tests
+
+  dos-build:
+    name: Build for DOS (Free Pascal i8086-msdos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fpc nasm
+
+      - name: Cache i8086-msdos cross compiler
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/fpc-msdos
+          key: fpc-${{ env.FPC_VERSION }}-i8086-msdos-large-v1
+
+      - name: Build i8086-msdos cross compiler
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o fpc-src.tar.gz \
+            "https://downloads.sourceforge.net/project/freepascal/Source/${FPC_VERSION}/fpc-${FPC_VERSION}.source.tar.gz"
+          tar xzf fpc-src.tar.gz
+          make -C "fpc-${FPC_VERSION}" crossall crossinstall \
+            CPU_TARGET=i8086 OS_TARGET=msdos \
+            CROSSOPT="-WmLarge -CX -XX" \
+            INSTALL_PREFIX="$HOME/fpc-msdos"
+
+      - name: Build GAMEMIND.EXE and TESTS.EXE
+        run: |
+          FPCLIB="$HOME/fpc-msdos/lib/fpc/${FPC_VERSION}"
+          mkdir -p build/dos
+          build() {
+            "$FPCLIB/ppcross8086" -Tmsdos -WmLarge -Mtp -O2 \
+              -Fu. -Fu"$FPCLIB/units/i8086-msdos/*" \
+              -FUbuild/dos -o"$2" "$1"
+          }
+          build GAMEMIND.PAS build/dos/GAMEMIND.EXE
+          build tests/TESTS.PAS build/dos/TESTS.EXE
+          ls -l build/dos/*.EXE
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gamemind-dos
+          path: |
+            build/dos/GAMEMIND.EXE
+            build/dos/TESTS.EXE
+
+  dos-smoke:
+    name: Smoke test in DOSBox
+    needs: dos-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: gamemind-dos
+          path: build/dos
+
+      - name: Install DOSBox
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq dosbox
+
+      - name: Run in DOSBox
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          printf 'ScanPath:D:\\GAMES\r\n' > build/dos/SETTINGS.TXT
+          timeout 300 dosbox \
+            -c "mount c build/dos" \
+            -c "mount d tests/fixtures" \
+            -c "c:" \
+            -c "GAMEMIND.EXE /V > VER.TXT" \
+            -c "GAMEMIND.EXE /LIST > LIST.TXT" \
+            -c "TESTS.EXE D:\\ > TESTS.TXT" \
+            -c "exit"
+
+      - name: Check results
+        run: |
+          cd build/dos
+          echo "--- VER.TXT";   cat VER.TXT
+          echo "--- LIST.TXT";  cat LIST.TXT
+          echo "--- TESTS.TXT"; cat TESTS.TXT
+          grep -q "GameMinder v$(../../scripts/check-version.sh)" VER.TXT
+          diff --strip-trailing-cr ../../tests/smoke/EXPECTED.TXT LIST.TXT
+          grep -q " 0 failed" TESTS.TXT

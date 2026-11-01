@@ -1,0 +1,5 @@
+Commander Keen 1|D:\GAMES\KEEN1\|keen1.exe
+doom|D:\GAMES\ACTION\DOOM\|DOOM.EXE -nomonsters
+Dune|D:\GAMES\ACTION\DUNE\|dune.bat
+NONAME|D:\GAMES\NONAME\|run.exe
+4 game(s) found
