@@ -195,9 +195,9 @@ begin
   TextBackground(ColorHeadingBackground);
   TextColor(ColorHeadingText);
   if ( Mode = ModeFullScreen ) then
-    write(PadRight('Name', developerColumn - listStartColumn),
-          PadRight('Developer', genreColumn - developerColumn),
-          PadRight('Genre', yearColumn - genreColumn),
+    write(PadColumn('Name', developerColumn - listStartColumn),
+          PadColumn('Developer', genreColumn - developerColumn),
+          PadColumn('Genre', yearColumn - genreColumn),
           PadRight('Year', columns - yearColumn))
   else
     write(PadRight('Name', nameWidth + 1));
@@ -225,9 +225,9 @@ begin
         write(PadRight(BlankLineFilter, nameWidth + 1));
     end
     else if ( Mode = ModeFullScreen ) then
-      write(PadRight(PStr(game^.Name), developerColumn - listStartColumn),
-            PadRight(PStr(game^.Developer), genreColumn - developerColumn),
-            PadRight(PStr(game^.Genre), yearColumn - genreColumn),
+      write(PadColumn(PStr(game^.Name), developerColumn - listStartColumn),
+            PadColumn(PStr(game^.Developer), genreColumn - developerColumn),
+            PadColumn(PStr(game^.Genre), yearColumn - genreColumn),
             PadRight(PStr(game^.Year), columns - yearColumn))
     else
       write(PadRight(PStr(game^.Name), nameWidth + 1));

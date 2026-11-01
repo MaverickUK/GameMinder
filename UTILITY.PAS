@@ -36,6 +36,7 @@ function FormatBytes(bytes:longint):string;
 function DosErrorText(code:word):string;
 { Strings }
 function PadRight(s:string; width:byte):string;
+function PadColumn(s:string; width:byte):string;
 function Trim(s:string):string;
 function UpStr(s:string):string;
 function CompareText(a,b:string):integer;
@@ -217,6 +218,15 @@ begin
   if ( length(s) > width ) then s[0] := chr(width);
   while ( length(s) < width ) do s := s + ' ';
   PadRight := s;
+end;
+
+{ Pad or truncate to a table column, always leaving a space before the next column }
+function PadColumn(s:string; width:byte):string;
+begin
+  if ( width = 0 ) then
+    PadColumn := ''
+  else
+    PadColumn := PadRight(s, width - 1) + ' ';
 end;
 
 { Remove leading and trailing spaces/tabs }

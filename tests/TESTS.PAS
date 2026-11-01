@@ -135,6 +135,9 @@ begin
   CheckStr('PadRight pads', 'Doom  ', PadRight('Doom', 6));
   CheckStr('PadRight truncates', 'Monkey', PadRight('Monkey Island', 6));
   CheckStr('PadRight zero', '', PadRight('Doom', 0));
+  CheckStr('PadColumn pads', 'Doom  ', PadColumn('Doom', 6));
+  CheckStr('PadColumn keeps a gap', 'Simulatio ', PadColumn('Simulation', 10));
+  CheckStr('PadColumn zero', '', PadColumn('Doom', 0));
   CheckBool('CompareText equal ignoring case', true, CompareText('doom', 'DOOM') = 0);
   CheckBool('CompareText case-insensitive order', true, CompareText('doom', 'Zork') < 0);
   CheckBool('CompareText prefix shorter first', true, CompareText('Doom', 'Doom II') < 0);

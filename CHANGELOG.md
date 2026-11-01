@@ -47,6 +47,7 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 - Directories with the archive or read-only attribute are skipped while scanning
 - Screen is left in graphics mode after some games exit
 - Cursor hiding doesn't work on monochrome (MDA/Hercules) displays
+- Long names, developers and genres run into the next column in full screen view
 
 ## [0.1.0] - 2022-09-09
 
