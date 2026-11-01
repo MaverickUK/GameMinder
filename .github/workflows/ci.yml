@@ -121,3 +121,28 @@ jobs:
           grep -q "GameMinder v$(../../scripts/check-version.sh)" VER.TXT
           diff --strip-trailing-cr ../../tests/smoke/EXPECTED.TXT LIST.TXT
           grep -q " 0 failed" TESTS.TXT
+
+  package:
+    name: Package release zip
+    needs: [version, dos-smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: gamemind-dos
+          path: build/dos
+
+      - name: Package
+        run: |
+          VERSION=$(scripts/check-version.sh)
+          mkdir -p dist/GAMEMIND
+          cp build/dos/GAMEMIND.EXE SETTINGS.TXT README.md CHANGELOG.md LICENSE dist/GAMEMIND/
+          cp -r examples dist/GAMEMIND/EXAMPLES
+          (cd dist && zip -qr "GameMinder-${VERSION}.zip" GAMEMIND && unzip -l "GameMinder-${VERSION}.zip")
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gameminder-package
+          path: dist/*.zip

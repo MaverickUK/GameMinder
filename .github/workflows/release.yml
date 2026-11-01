@@ -24,19 +24,11 @@ jobs:
         id: version
         run: echo "version=$(scripts/check-version.sh "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
 
+      # Zip built and tested by the CI package job
       - uses: actions/download-artifact@v4
         with:
-          name: gamemind-dos
-          path: build/dos
-
-      - name: Package
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          mkdir -p dist/GAMEMIND
-          cp build/dos/GAMEMIND.EXE SETTINGS.TXT README.md CHANGELOG.md LICENSE dist/GAMEMIND/
-          cp -r examples dist/GAMEMIND/EXAMPLES
-          (cd dist && zip -r "GameMinder-${VERSION}.zip" GAMEMIND)
+          name: gameminder-package
+          path: dist
 
       - name: Create draft release
         env:

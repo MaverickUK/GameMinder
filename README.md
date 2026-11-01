@@ -67,7 +67,7 @@ More examples are in [examples](examples). Every option in `SETTINGS.TXT` is doc
 Command line: `GAMEMIND /V` shows the version, `GAMEMIND /LIST` prints the games found.
 
 ## 📑 [Changelog](CHANGELOG.md)
-## 🗺️ [Roadmap](https://github.com/MaverickUK/GameMinder/wiki/Roadmap)
+## 🗺️ [Roadmap](ROADMAP.md)
 ## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
 ## :hammer: [Building & testing](BUILD.md)
 

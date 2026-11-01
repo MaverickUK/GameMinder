@@ -17,8 +17,12 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 - `exec:` can include arguments, e.g. `exec:DOOM.EXE -nomonsters`
 - `/V`, `/LIST` and `/?` command line switches
 - Version number follows SemVer, shown in the menu bar and with `/V`
-- Sample `SETTINGS.TXT` documenting every option
-- Unit tests and GitHub Actions builds
+- Sample `SETTINGS.TXT` documenting every option, and example `!GM_INFO.TXT` files
+- Unit tests that run on Linux with Free Pascal and as a 16-bit DOS program
+- GitHub Actions: unit tests, a Free Pascal DOS build, a DOSBox smoke test and a packaged release zip on every change; tags create a draft release
+- Builds with Free Pascal (i8086-msdos) as well as Turbo Pascal 7 - see [BUILD.md](BUILD.md)
+- ExecSwap v1.3 source (in `EXECSWAP/`) alongside the prebuilt unit
+- [ROADMAP.md](ROADMAP.md), replacing the wiki roadmap
 
 ### Changed
 - Esc now exits straight away from the main menu (clears the filter or leaves a sub-menu first)
@@ -26,6 +30,8 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 - `SETTINGS.TXT` is read once at startup, which speeds up starting on slow disks
 - `!GM_INFO.TXT` keys are case-insensitive, values are trimmed and lines are no longer cut off at 50 characters
 - A game without a `name:` uses its directory name
+- Logic split into `CONFIG` (was `SETTINGS`), `GAMES` and `LAUNCH` units, separate from the screen code
+- Horizontal menus are defined as tables, making new options easier to add
 
 ### Fixed
 - Batch files (`.BAT`) can be used as `exec:`. Previously they failed or rebooted the PC ([#1](https://github.com/MaverickUK/GameMinder/issues/1))
