@@ -209,7 +209,7 @@ jobs:
         run: |
           VERSION=$(scripts/check-version.sh)
           mkdir -p dist/GAMEMIND
-          cp build/dos/GAMEMIND.EXE SETTINGS.TXT README.md QUICKSTART.md CHANGELOG.md LICENSE dist/GAMEMIND/
+          cp build/dos/GAMEMIND.EXE SETTINGS.TXT THEMES.TXT README.md QUICKSTART.md CHANGELOG.md LICENSE dist/GAMEMIND/
           cp -r examples dist/GAMEMIND/EXAMPLES
           (cd dist && zip -qr "GameMinder-${VERSION}.zip" GAMEMIND && unzip -l "GameMinder-${VERSION}.zip")
 

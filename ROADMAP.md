@@ -24,6 +24,7 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Type of game: full, demo, shareware, freeware~~ (0.3.0, `type:`)
 - ~~More rows on screen~~ (0.3.0, `GAMEMIND /50`)
 - ~~Warn when a game needs more memory than is free~~ (0.3.0, `memory:`)
+- ~~Colour themes, chosen from the menu~~ (0.4.0, `THEMES.TXT`)
 - Configure which columns are shown in half and full screen mode, and their widths, in `SETTINGS.TXT`
 - ASCII splash screen on exit
 

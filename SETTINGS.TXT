@@ -43,7 +43,11 @@ UseEmsForSwapFile:true
 ; Show extra detail while scanning and launching games
 VerboseOutput:false
 
-; Colours: Black, Blue, Green, Cyan, Red, Magenta, Brown, LightGray, DarkGray,
+; Colour theme from THEMES.TXT - change it with Theme in the menu, which
+; updates this line. Leave blank to use the Color settings below instead
+Theme:Classic
+
+; Colours, used when Theme is blank: Black, Blue, Green, Cyan, Red, Magenta, Brown, LightGray, DarkGray,
 ; LightBlue, LightGreen, LightCyan, LightRed, LightMagenta, Yellow, White (or 0-15)
 ColorBackground:Blue
 ColorText:White

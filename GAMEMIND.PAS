@@ -7,6 +7,7 @@ Startup, command line and the main input loop. The rest lives in units:
   PREFS     settings          LISTVIEW  games list       RUNNER   running games
   SCREEN    layout & frame    PANELS    right hand panel GAMES    games data
   MENU      horizontal menu   LAUNCH    launch commands  CONFIG   SETTINGS.TXT
+  THEMES    colour themes
 ------------------------------}
 uses
     Dos,
@@ -20,6 +21,8 @@ uses
     Menu,
     Panels,
     Runner,
+    Config,
+    Themes,
     { Launch external executable - Must keep ExecSwap last.
       Turbo Pascal uses EXECSWAP.TPU, Free Pascal uses EXECSWAP\FPC\EXECSWAP.PAS }
     ExecSwap;
@@ -128,6 +131,25 @@ begin
     if ( PStr(ViewGame(i)^.Path) = highlightedPath ) then scrollTo(i);
 
   RedrawAll;
+end;
+
+{ Switch to the next theme in THEMES.TXT, remembering it in SETTINGS.TXT }
+procedure NextTheme;
+begin
+  if ( ThemeCount = 0 ) then exit;
+
+  ApplyTheme(CurrentTheme mod ThemeCount + 1);
+  ThemeSetting := ThemeName(CurrentTheme);
+  SaveConfigValue(ExeDir + SettingsFileName, 'Theme', ThemeSetting);
+  RedrawAll;
+end;
+
+{ Load THEMES.TXT and use the theme chosen in SETTINGS.TXT }
+procedure LoadTheme;
+begin
+  LoadThemes(ExeDir + ThemesFileName);
+  if ( length(ThemeSetting) > 0 ) then
+    ApplyTheme(FindTheme(ThemeSetting));
 end;
 
 { ////////////////// Command line ////////////////// }
@@ -247,6 +269,7 @@ begin
     writeln('Setup file not found, using default settings');
     TextColor(White);
   end;
+  LoadTheme;
   writeln('');
 
   writeln('Looking for games in ', ScanPath);
@@ -365,6 +388,7 @@ begin
               maSortMenu: showMenu(MenuSort, ord(CurrentSort));
               maFilterMenu: showMenu(MenuFilter, 0);
               maRescan: RescanGames;
+              maTheme: NextTheme;
               maExit: runMainLoop := false; { Exit GameMinder }
               { --- Sort --- }
               maSortName: SortBy(smName);

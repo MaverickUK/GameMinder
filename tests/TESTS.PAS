@@ -19,7 +19,9 @@ uses
     Utility,
     Config,
     Games,
-    Launch;
+    Launch,
+    Prefs,
+    Themes;
 
 var
   Passes,Failures:integer;
@@ -208,6 +210,88 @@ begin
   CheckInt('ParseColor mixed case', 13, ParseColor('LightMagenta', 0));
   CheckInt('ParseColor out of range', 3, ParseColor('16', 3));
   ClearConfig;
+end;
+
+procedure TestSaveConfig;
+const
+  TestFile = 'TESTSET.TXT';
+var
+  f:Text;
+  line:string;
+  lines:integer;
+begin
+  { New file }
+  CheckBool('SaveConfigValue creates file', true, SaveConfigValue(TestFile, 'Theme', 'Turbo'));
+  CheckBool('SaveConfigValue reload', true, LoadConfigFile(TestFile));
+  CheckStr('SaveConfigValue value', 'Turbo', GetConfigString('Theme', ''));
+
+  { Replace, keeping comments and other settings }
+  Assign(f, TestFile);
+  Rewrite(f);
+  writeln(f, '; My settings');
+  writeln(f, 'ScanPath:D:\GAMES');
+  writeln(f, 'theme:Classic');
+  writeln(f, '; Theme:Commented');
+  Close(f);
+  CheckBool('SaveConfigValue replace', true, SaveConfigValue(TestFile, 'Theme', 'Amber'));
+  CheckStr('SaveConfigValue updates loaded settings', 'Amber', GetConfigString('Theme', ''));
+
+  Reset(f);
+  lines := 0;
+  while not Eof(f) do begin
+    readln(f, line);
+    inc(lines);
+    case lines of
+      1: CheckStr('SaveConfigValue keeps comment', '; My settings', line);
+      2: CheckStr('SaveConfigValue keeps setting', 'ScanPath:D:\GAMES', line);
+      3: CheckStr('SaveConfigValue replaces line', 'Theme:Amber', line);
+      4: CheckStr('SaveConfigValue ignores commented key', '; Theme:Commented', line);
+    end;
+  end;
+  Close(f);
+  CheckInt('SaveConfigValue line count', 4, lines);
+
+  Erase(f);
+  ClearConfig;
+end;
+
+procedure TestThemes;
+var
+  theme:TTheme;
+begin
+  CheckBool('ParseThemeLine', true, ParseThemeLine('Turbo: Background=Blue Text=Yellow', theme));
+  CheckStr('ParseThemeLine name', 'Turbo', theme.Name);
+  CheckInt('ParseThemeLine colour', 14, theme.Colors[teText]);
+  CheckInt('ParseThemeLine default for missing element', 2, theme.Colors[teHighlightBack]);
+  CheckBool('ParseThemeLine comment', false, ParseThemeLine('; Turbo: Text=Yellow', theme));
+  CheckBool('ParseThemeLine blank', false, ParseThemeLine('  ', theme));
+  CheckBool('ParseThemeLine no name', false, ParseThemeLine(':Text=Yellow', theme));
+
+  CheckInt('LoadThemes missing file', 0, LoadThemes(Fixtures + 'NOSUCH.TXT'));
+  CheckInt('LoadThemes', 3, LoadThemes(Fixtures + 'THEMES.TXT'));
+  CheckInt('FindTheme', 2, FindTheme('green screen'));
+  CheckInt('FindTheme missing', 0, FindTheme('Turbo'));
+  CheckStr('ThemeName with spaces', 'Green Screen', ThemeName(2));
+  CheckStr('ThemeName out of range', '', ThemeName(9));
+
+  GetTheme(2, theme);
+  CheckInt('Theme lower case element', 0, theme.Colors[teBackground]);
+  CheckInt('Theme upper case element', 10, theme.Colors[teText]);
+  CheckInt('Theme numeric colour', 2, theme.Colors[teHighlightBack]);
+  CheckInt('Theme unknown colour keeps default', 15, theme.Colors[teFrame]);
+
+  ApplyTheme(2);
+  CheckInt('ApplyTheme current', 2, CurrentTheme);
+  CheckInt('ApplyTheme background', 0, ColorBackground);
+  CheckInt('ApplyTheme text', 10, ColorText);
+  CheckInt('ApplyTheme heading default', 4, ColorHeadingBackground);
+
+  ApplyTheme(0);
+  CheckInt('ApplyTheme out of range ignored', 2, CurrentTheme);
+
+  GetTheme(3, theme);
+  CheckStr('Theme with no colours', 'Empty', theme.Name);
+  CheckInt('Theme with no colours uses Classic', 1, theme.Colors[teBackground]);
 end;
 
 { ////////////////// Games ////////////////// }
@@ -480,6 +564,8 @@ begin
   TestStrings;
   TestPaths;
   TestConfig;
+  TestSaveConfig;
+  TestThemes;
   TestInfoAndStats;
   TestPlayLog;
   TestScan;

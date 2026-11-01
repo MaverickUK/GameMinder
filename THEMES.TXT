@@ -1,0 +1,18 @@
+; GameMinder themes - choose one with Theme in the menu
+;
+; One theme per line: its name, a colon, then element=colour pairs.
+; Elements: Background Text Frame HeadingText HeadingBack HighlightText
+;           HighlightBack MenuText MenuHighlightText MenuHighlightBack
+; Colours:  Black Blue Green Cyan Red Magenta Brown LightGray DarkGray
+;           LightBlue LightGreen LightCyan LightRed LightMagenta Yellow White
+;           or 0-15. Backgrounds can only use the first eight (Black to
+;           LightGray) - brighter ones show as their darker version.
+; Anything left out uses the Classic colours. Names can be up to 20 characters.
+
+Classic: Background=Blue Text=White Frame=White HeadingText=Yellow HeadingBack=Red HighlightText=Yellow HighlightBack=Green MenuText=White MenuHighlightText=Blue MenuHighlightBack=LightGray
+Turbo: Background=Blue Text=Yellow Frame=LightGray HeadingText=White HeadingBack=Cyan HighlightText=Black HighlightBack=Green MenuText=White MenuHighlightText=Black MenuHighlightBack=Green
+Commander: Background=Blue Text=LightCyan Frame=LightCyan HeadingText=Yellow HeadingBack=Blue HighlightText=Black HighlightBack=Cyan MenuText=White MenuHighlightText=Black MenuHighlightBack=Cyan
+Mono: Background=Black Text=LightGray Frame=LightGray HeadingText=Black HeadingBack=LightGray HighlightText=Black HighlightBack=LightGray MenuText=LightGray MenuHighlightText=Black MenuHighlightBack=LightGray
+Amber: Background=Black Text=Brown Frame=Brown HeadingText=Black HeadingBack=Brown HighlightText=Yellow HighlightBack=Red MenuText=Brown MenuHighlightText=Black MenuHighlightBack=Brown
+Phosphor: Background=Black Text=Green Frame=Green HeadingText=Black HeadingBack=Green HighlightText=LightGreen HighlightBack=Black MenuText=Green MenuHighlightText=Black MenuHighlightBack=Green
+Hot Dog Stand: Background=Red Text=Yellow Frame=Yellow HeadingText=Black HeadingBack=Brown HighlightText=Red HighlightBack=LightGray MenuText=Yellow MenuHighlightText=Red MenuHighlightBack=LightGray

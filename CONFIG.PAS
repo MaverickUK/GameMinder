@@ -18,6 +18,7 @@ function GetConfigInt(key:string; default:longint):longint;
 function GetConfigBool(key:string; default:boolean):boolean;
 function GetConfigColor(key:string; default:byte):byte;
 function ParseColor(name:string; default:byte):byte;
+function SaveConfigValue(fileName:string; key:string; value:string):boolean;
 
 { --------- implementation --------- }
 implementation
@@ -166,6 +167,57 @@ begin
 
   val(name, i, code);
   if ( code = 0 ) and ( i <= 15 ) then ParseColor := i;
+end;
+
+{ Change one setting in the file, keeping every other line (including comments)
+  as it is. Replaces the first line for the key, or adds one at the end }
+function SaveConfigValue(fileName:string; key:string; value:string):boolean;
+var
+  source,dest:Text;
+  tempName,line,lineKey,lineValue:string;
+  sourceFound,replaced:boolean;
+begin
+  SaveConfigValue := false;
+  SetConfigValue(key, value);
+
+  tempName := DirOfPath(fileName) + 'SETTINGS.$$$';
+  Assign(dest, tempName);
+  {$I-}
+  Rewrite(dest);
+  {$I+}
+  if ( IOResult <> 0 ) then exit;
+
+  replaced := false;
+  Assign(source, fileName);
+  {$I-}
+  Reset(source);
+  {$I+}
+  sourceFound := ( IOResult = 0 );
+
+  {$I-}
+  if ( sourceFound ) then begin
+    while not Eof(source) do begin
+      readln(source, line);
+      if not replaced and SplitKeyValue(line, lineKey, lineValue) and ( lineKey = UpStr(key) ) then begin
+        line := key + ':' + value;
+        replaced := true;
+      end;
+      writeln(dest, line);
+    end;
+    Close(source);
+  end;
+
+  if not replaced then writeln(dest, key, ':', value);
+  Close(dest);
+  {$I+}
+  if ( IOResult <> 0 ) then exit;
+
+  { Swap the new file in }
+  {$I-}
+  if ( sourceFound ) then Erase(source);
+  Rename(dest, fileName);
+  {$I+}
+  SaveConfigValue := ( IOResult = 0 );
 end;
 
 { Read a color based config value }
