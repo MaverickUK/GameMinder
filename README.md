@@ -1,7 +1,12 @@
 # GameMinder
 ## :video_game: A lightweight DOS games launcher to let you easily find and launch your games
 
-[![GameMinder UI](GameMinder_v0-1-0.jpg)]([http://google.com.au/](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw))
+[![CI](https://github.com/MaverickUK/GameMinder/actions/workflows/ci.yml/badge.svg)](https://github.com/MaverickUK/GameMinder/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/MaverickUK/GameMinder?include_prereleases&sort=semver)](https://github.com/MaverickUK/GameMinder/releases)
+
+[![GameMinder demo: browsing, sorting, filtering and launching games](docs/gameminder-demo.gif)](docs/gameminder-demo.mp4)
+
+*GameMinder v0.2.0 in DOSBox-X: help, system status, full screen view, sorting, type-to-filter, and launching a game from a batch file, with play stats updated on return. [Watch as MP4](docs/gameminder-demo.mp4).*
 
 [Watch demo of GameMinder running on a 386 on YouTube](https://www.youtube.com/watch?v=UGUtVTo1mUQ&list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw&index=7)
 
@@ -15,14 +20,26 @@ GameMinder also keeps track on when you've played a specific game and for how lo
 
 [A series of videos showing the development are available on YouTube](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw)
 
-## 📑 [Changelog](https://github.com/MaverickUK/GameMinder/wiki/Changelog)
-## 🗺️ [Roadmap](https://github.com/MaverickUK/GameMinder/wiki/Roadmap)
+## :rocket: [Quick start](QUICKSTART.md)
+
+1. Download the latest zip from [Releases](https://github.com/MaverickUK/GameMinder/releases) and copy `GAMEMIND.EXE` and `SETTINGS.TXT` to your DOS machine
+2. Set `ScanPath` in `SETTINGS.TXT` to your games directory
+3. Add a `!GM_INFO.TXT` file to each game's directory, e.g. `name:Commander Keen 1` and `exec:keen1.exe`
+4. Run `GAMEMIND`
+
+The [quick start guide](QUICKSTART.md) covers the `!GM_INFO.TXT` format, controls, play stats and settings.
+
+## 📑 [Changelog](CHANGELOG.md)
+## 🗺️ [Roadmap](ROADMAP.md)
 ## :computer: [Design](https://github.com/MaverickUK/GameMinder/wiki/Design)
+## :hammer: [Building & testing](BUILD.md)
+
+GameMinder follows [Semantic Versioning](https://semver.org).
 
 ## :clap: Credits
 Helpful resources used in the creation of GameMinder
-* [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) - Allows execution of external program whilst leaving only a small 2K memory stub
-* [Vogons](https://www.vogons.org/viewtopic.php?p=1100857) for motivation support and testing
+* [ExecWithSwap](https://www.pcorner.com/list/PASCAL/EXECSW13.ZIP/INFO/) by TurboPower Software - Allows execution of external program whilst leaving only a small 2K memory stub
+* [Vogons](https://www.vogons.org/viewtopic.php?t=89718) for motivation support and testing
 
 ### Useful resources
 * [ASCII codes lookup](https://www.ascii-codes.com/)

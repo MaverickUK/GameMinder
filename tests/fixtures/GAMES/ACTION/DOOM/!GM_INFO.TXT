@@ -1,0 +1,5 @@
+name:doom
+exec:DOOM.EXE -nomonsters
+developer:id software
+genre:FPS
+year:1993

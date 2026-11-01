@@ -14,93 +14,82 @@ const
   ModeHelp = 0;
   ModeInfo = 1;
   ModeStatus = 2;
-  ModeFullScreen = 3;  
+  ModeFullScreen = 3;
 
 procedure drawBlanks(amount:byte);
-procedure resetLineDrawing;
+procedure resetLineDrawing(backColour:byte);
 procedure blankLine;
 procedure blankRemainingLines;
 procedure writeLine(text:string; textColour:byte; backColour:byte);
 procedure drawFrame(mode:byte; drawMode:TDrawScreenMode; x1,y1,x2,y2:byte);
+procedure HideCursor;
+procedure ShowCursor;
 
 { --------- implementation --------- }
-implementation 
+implementation
 uses
-    Crt;
+    Crt,
+    Dos;
 const
   rows = 24;
-  columns = 80;  
+  columns = 80;
+  panelColumn = columns div 2 + 1; { First column of the right hand panel }
+  panelWidth = columns div 2 - 1;  { Up to, but not including, the right frame }
 var
-  drawColumn:byte;
   drawRow:byte;
-
-{ --------- private --------- }
-
+  panelBackground:byte;
+  originalCursorShape:word;
 
 { --------- public --------- }
 
 { Draw blank characters to screen }
 procedure drawBlanks(amount:byte);
-var 
+var
   i:byte;
 begin
   for i:=1 to amount do write(' '); { Blanks }
 end;
 
 { Reset before drawing lines }
-procedure resetLineDrawing;
+procedure resetLineDrawing(backColour:byte);
 begin
   drawRow := 4; { Starting row to draw}
+  panelBackground := backColour;
 end;
 
 { Draw a blank line }
 procedure blankLine;
-var
-  rowLength,i:byte;
 begin
-    rowLength := columns div 2 - 1;
-    gotoxy(drawColumn, drawRow);
-
-    drawBlanks(rowLength);
-    inc(drawRow);
+  gotoxy(panelColumn, drawRow);
+  TextBackground(panelBackground);
+  drawBlanks(panelWidth);
+  inc(drawRow);
 end;
 
 { Draw blank remaining lines }
 procedure blankRemainingLines;
-var
-  rowLength,i:integer;
 begin
-  rowLength := columns div 2 - 2;
-
-  while drawRow < rows do begin
-    gotoxy(drawColumn, drawRow);
-      drawBlanks(rowLength);
-      inc(drawRow);
-  end;
+  while drawRow < rows do
+    blankLine;
 end;
 
-{ Draw a line }
+{ Draw a line, truncated to fit the panel }
 procedure writeLine(text:string; textColour:byte; backColour:byte);
-var
-    rowLength,paddingLength:integer;
-    i:integer;
 begin
-    drawColumn := columns div 2 + 1;
-    rowLength := columns div 2 - 1;
-    paddingLength := rowLength - length(text);
+  if ( length(text) > panelWidth ) then text[0] := chr(panelWidth);
 
-    { Move to drawing position }
-    gotoxy(drawColumn, drawRow);
+  { Move to drawing position }
+  gotoxy(panelColumn, drawRow);
 
-    { Set colours }
-    TextColor(textColour);
-    TextBackground(backColour);
+  { Set colours }
+  TextColor(textColour);
+  TextBackground(backColour);
 
-    write(text);
-    drawBlanks(paddingLength);
+  write(text);
+  drawBlanks(panelWidth - length(text));
 
-    { next row for next  }
-    inc(drawRow); 
+  { next row for next  }
+  inc(drawRow);
 end;
 
 procedure drawFrame(mode:byte; drawMode:TDrawScreenMode; x1,y1,x2,y2:byte);
@@ -159,19 +148,24 @@ begin
    gotoxy(x1,y2);(*lower left corner of the box*)
    write(charBottomLeftFrame);
    horizonalLine(x1+1,y2,x1,x2-2);(*concat the lower corners*)
+   { Keep the split's cap when only the bottom is redrawn }
+   if not ( mode = ModeFullScreen ) then begin
+     gotoxy(x2 div 2, y2);
+     write(charBottomMiddleCap);
+   end;
   end;
 
   { Left & Right sides }
   if ( drawMode = All ) or ( drawMode = OnlyFrame ) then begin
    verticalLine(x1,y1+1,y1,y2-2);(*concat the left sides of the box*)
    verticalLine(x2,y1+1,y1,y2-2);(*and last,concat the right sides too*)
-  end; 
+  end;
 
-  { Horizonal split }
-  if ( drawMode = All ) or ( drawMode = OnlyFrame ) and not ( Mode = ModeFullScreen ) then begin
+  { Horizonal split - not shown in full screen mode }
+  if ( ( drawMode = All ) or ( drawMode = OnlyFrame ) ) and not ( mode = ModeFullScreen ) then begin
    {Draw horizonal split}
-   verticalLine(x2 div 2, y1, y1, y2);   
-   {Top cap}    
+   verticalLine(x2 div 2, y1, y1, y2);
+   {Top cap}
    gotoxy(x2 div 2, y1);
    write(charTopMiddleCap);
    {Bottom cap}
@@ -181,4 +175,32 @@ begin
 
 end;
 
+{ Hide the text cursor using the video BIOS, works on CGA/EGA/VGA and MDA }
+procedure HideCursor;
+var
+  regs:Registers;
+begin
+  regs.AH := $03; { Read cursor shape }
+  regs.BH := 0;
+  Intr($10, regs);
+  { Don't overwrite the saved shape if the cursor is already hidden }
+  if ( regs.CX and $2000 ) = 0 then originalCursorShape := regs.CX;
+
+  regs.AH := $01; { Set cursor shape }
+  regs.CX := $2000; { Bit 5 of start line hides the cursor }
+  Intr($10, regs);
+end;
+
+{ Restore the cursor saved by HideCursor }
+procedure ShowCursor;
+var
+  regs:Registers;
+begin
+  regs.AH := $01;
+  regs.CX := originalCursorShape;
+  Intr($10, regs);
+end;
+
+begin
+  originalCursorShape := $0607; { Standard colour text mode underline cursor }
 end.

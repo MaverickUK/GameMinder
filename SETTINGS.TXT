@@ -1,0 +1,53 @@
+; GameMinder settings
+; Lines starting with ; are comments. Format is Key:Value
+; This file must be in the same directory as GAMEMIND.EXE
+
+; Directory to recursively search for games. Trailing \ is optional
+ScanPath:C:\GAMES\
+
+; Name of the file in each game directory describing the game
+InfoFileName:!GM_INFO.TXT
+
+; Maximum number of games to load (up to 16000)
+MaxGames:1000
+
+; Startup sort order: Name, Developer, Year, Genre, TimesPlayed, TimePlayed
+DefaultSort:Name
+
+; Startup right hand panel: Help, Info, Status, Full
+DefaultView:Info
+
+; Screen row (5-23) the highlighted game is shown on
+HighlightedRow:14
+
+; Text shown on rows with no game e.g. -----
+BlankLineFilter:
+
+; Record when and for how long games are played, in !GM_LOG.TXT in each game directory
+EnablePlayStats:true
+
+; Wait for a key press after a game exits, useful to read any error messages
+WaitForKeyAfterGame:false
+
+; Milliseconds to pause after a game exits, and at startup
+DelayAfterGameExit:0
+DelayOnStartup:0
+
+; Swap GameMinder to EMS rather than disk while a game runs, when EMS is available
+UseEmsForSwapFile:true
+
+; Show extra detail while scanning and launching games
+VerboseOutput:false
+
+; Colours: Black, Blue, Green, Cyan, Red, Magenta, Brown, LightGray, DarkGray,
+; LightBlue, LightGreen, LightCyan, LightRed, LightMagenta, Yellow, White (or 0-15)
+ColorBackground:Blue
+ColorText:White
+ColorFrame:White
+ColorHeadingBackground:Red
+ColorHeadingText:Yellow
+ColorHighlightBackground:Green
+ColorHighlightText:Yellow
+ColorHorizontalMenuPrimaryText:White
+ColorHorizonalMenuHighlightText:Blue
+ColorHorizonalMenuHighlightBackground:White
