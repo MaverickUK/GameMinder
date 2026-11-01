@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.3.0] - 2026-11-01
+
+### Added
+- Games are remembered in `GMCACHE.TXT`, so startup no longer scans every directory. **Rescan** in the menu, or `GAMEMIND /SCAN`, looks for new or changed games. `CacheGames:false` turns this off
+- `before:` and `after:` commands in `!GM_INFO.TXT`, run either side of a game e.g. to load and unload a mouse driver
+- `type:` in `!GM_INFO.TXT` for Full, Demo, Shareware, Freeware etc. Shown in game info, sortable, and matched when filtering
+- `memory:` in `!GM_INFO.TXT` (KB of conventional memory a game needs). Game info shows if it won't fit, and GameMinder asks before running it
+- `GAMEMIND /50` starts in 50 line mode (43 on EGA), showing twice as many games
+- System status shows the memory free for games
+- If a program is left loaded in memory after a game (e.g. a TSR), GameMinder explains why it can't continue instead of exiting silently
+
+### Changed
+- `GAMEMIND.PAS` split into units for settings, screen layout, games list, panels, menu and running games
+- `HighlightedRow` defaults to the middle of the list, whatever the screen size
+
 ## [0.2.1] - 2026-11-01
 
 ### Fixed
@@ -77,6 +92,7 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.3.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.3.0
 [0.2.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.1
 [0.2.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.0
 [0.1.0]: https://github.com/MaverickUK/GameMinder/releases/tag/0.1.0

@@ -19,6 +19,11 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Semantic versioning, unit tests and GitHub Actions builds~~ (0.2.0)
 - ~~Release builds swap GameMinder out of memory while games run~~ (0.2.1, ExecSwap ported to Free Pascal)
 - ~~Run a game from the command line~~ (0.2.1, `GAMEMIND /RUN name`)
+- ~~Split GAMEMIND.PAS into units~~ (0.3.0)
+- ~~Remember games between runs, with a rescan option~~ (0.3.0, `GMCACHE.TXT`, Rescan menu option and `/SCAN`)
+- ~~Type of game: full, demo, shareware, freeware~~ (0.3.0, `type:`)
+- ~~More rows on screen~~ (0.3.0, `GAMEMIND /50`)
+- ~~Warn when a game needs more memory than is free~~ (0.3.0, `memory:`)
 - Configure which columns are shown in half and full screen mode, and their widths, in `SETTINGS.TXT`
 - ASCII splash screen on exit
 
@@ -29,7 +34,7 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Config options: default sort mode and default display mode on startup~~ (0.2.0, `DefaultSort` and `DefaultView`)
 - ~~Config option: wait for a key press after a game exits~~ (0.2.0, `WaitForKeyAfterGame`)
 - Popularity indicator in the games list (a single shaded ASCII character, can be turned off in `SETTINGS.TXT`)
-- Automatically load the mouse driver for games that need a mouse
+- ~~Automatically load the mouse driver for games that need a mouse~~ (0.3.0, `before:` and `after:` commands)
 - Config option: custom date/time formatting
 - Customise what the function keys (e.g. F5) do in `SETTINGS.TXT`
 - Add, edit and delete games within GameMinder

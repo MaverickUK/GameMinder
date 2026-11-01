@@ -1,518 +1,62 @@
 Program GameMind;
+{-----------------------------
+GameMinder - a lightweight DOS games launcher
+https://github.com/MaverickUK/GameMinder
+
+Startup, command line and the main input loop. The rest lives in units:
+  PREFS     settings          LISTVIEW  games list       RUNNER   running games
+  SCREEN    layout & frame    PANELS    right hand panel GAMES    games data
+  MENU      horizontal menu   LAUNCH    launch commands  CONFIG   SETTINGS.TXT
+------------------------------}
 uses
-    Objects,
     Dos,
     Crt, { https://theasciicode.com.ar/extended-ascii-code/graphic-character-high-density-dotted-ascii-code-178.html }
     { GameMinder modules }
     Utility,
-    Config,
     Games,
-    Launch,
+    Prefs,
     Screen,
+    ListView,
+    Menu,
+    Panels,
+    Runner,
     { Launch external executable - Must keep ExecSwap last.
       Turbo Pascal uses EXECSWAP.TPU, Free Pascal uses EXECSWAP\FPC\EXECSWAP.PAS }
     ExecSwap;
 
-{$I VERSION.INC}
-
-const
-  SettingsFileName = 'SETTINGS.TXT';
-  SwapFileName = 'SWAP.$$$';
-  MaxFilterLength = 30;
-  { Screen }
-  rows = 24;
-  columns = 80;
-  { Games list }
-  listStartColumn = 3;
-  listMinRow = 5;
-  listMaxRow = 24;
-  listHeaderRow = 4;
-  developerColumn = 40;
-  genreColumn = 60;
-  yearColumn = 70;
-  pageSize = listMaxRow - listMinRow;
-  { Horizontal menus }
-  MenuPrimary = 0;
-  MenuSort = 1;
-  MenuFilter = 2;
-
-type
-  { What a horizontal menu option does when Enter is pressed }
-  TMenuAction = (maRun, maFilterMenu, maSortMenu, maAdd, maEdit, maDelete, maExit,
-                 maSortName, maSortDeveloper, maSortYear, maSortGenre, maSortTimesPlayed, maSortTimePlayed,
-                 maFilterType, maFilterClear);
-
-  TMenuItem = record
-    Caption: string[10];
-    Hint: string[60];
-    Action: TMenuAction;
-  end;
-
-const
-  PrimaryMenu: array[0..6] of TMenuItem = (
-    (Caption:'Run'; Hint:'Run highlighted game'; Action:maRun),
-    (Caption:'Filter'; Hint:'Filter games by name - or just start typing'; Action:maFilterMenu),
-    (Caption:'Sort'; Hint:'Name, Developer, Year, Genre, Played, Playtime'; Action:maSortMenu),
-    (Caption:'Add'; Hint:'Not yet implemented: Add game to GameMinder'; Action:maAdd),
-    (Caption:'Edit'; Hint:'Not yet implemented: Edit game in GameMinder'; Action:maEdit),
-    (Caption:'Delete'; Hint:'Not yet implemented: Delete game from GameMinder'; Action:maDelete),
-    (Caption:'Exit'; Hint:'Exit to DOS'; Action:maExit));
-
-  SortMenu: array[0..5] of TMenuItem = (
-    (Caption:'Name'; Hint:'Sort by name ascending'; Action:maSortName),
-    (Caption:'Developer'; Hint:'Sort by developer ascending'; Action:maSortDeveloper),
-    (Caption:'Year'; Hint:'Sort by year ascending'; Action:maSortYear),
-    (Caption:'Genre'; Hint:'Sort by genre ascending'; Action:maSortGenre),
-    (Caption:'Played'; Hint:'Sort by times played, most played first'; Action:maSortTimesPlayed),
-    (Caption:'Playtime'; Hint:'Sort by total time played, longest first'; Action:maSortTimePlayed));
-
-  FilterMenu: array[0..1] of TMenuItem = (
-    (Caption:'Filter'; Hint:'Type to filter games by name, Backspace to edit'; Action:maFilterType),
-    (Caption:'Clear'; Hint:'Clear current filter'; Action:maFilterClear));
-
 var
-  ApplicationName:string[30];
-  ExeDir:string;
-  ListOnly:boolean; { /LIST - print games and exit }
-  RunName:string;   { /RUN - run the first game whose name contains this, then exit }
-  StartupVideoMode:word;
+  ListOnly:boolean;  { /LIST - print games and exit }
+  RunName:string;    { /RUN - run the first game whose name contains this, then exit }
+  ForceScan:boolean; { /SCAN - scan for games rather than using the cache }
 
-  { User configurable settings }
-  ScanPath:string[70];
-  InfoFileName:string[12];
-  HighlightedRow:word;
-  DelayAfterGameExit:word;
-  DelayOnStartup:word;
-  BlankLineFilter:string[30];
-  UseEmsForSwapFile:boolean;
-  EnablePlayStats:boolean;
-  WaitForKeyAfterGame:boolean;
-  DefaultSort:TSortMode;
-  DefaultView:byte;
+{ ////////////////// Loading games ////////////////// }
 
-  { /// Colour theme /// }
-  { Available colours: https://www.freepascal.org/docs-html/rtl/crt/index-2.html }
-  ColorBackground:byte;
-  ColorText:byte;
-  ColorFrame:byte;
-  { Heading }
-  ColorHeadingBackground:byte;
-  ColorHeadingText:byte;
-  { Hihghlight }
-  ColorHighlightBackground:byte;
-  ColorHighlightText:byte;
-  { Horizontal menu }
-  ColorHorizontalMenuPrimaryText:byte;
-  ColorHorizonalMenuHighlightText:byte;
-  ColorHorizonalMenuHighlightBackground:byte;
-
-  { Drawing to screen }
-  mode:byte;
-  hMenu:byte;   { Which horizontal menu is shown }
-  hIndex:byte;  { Highlighted option within that menu }
-
-  { Highlighted game - index into the filtered view }
-  offset:integer;
-
-{ Parse a DefaultView setting }
-function ParseView(name:string; default:byte):byte;
+procedure SaveCache;
 begin
-  name := UpStr(name);
-  if ( name = 'HELP' ) then ParseView := ModeHelp
-  else if ( name = 'INFO' ) then ParseView := ModeInfo
-  else if ( name = 'STATUS' ) then ParseView := ModeStatus
-  else if ( name = 'FULL' ) or ( name = 'FULLSCREEN' ) then ParseView := ModeFullScreen
-  else ParseView := default;
+  if ( CacheGames ) then
+    SaveGameCache(ExeDir + CacheFileName, ScanPath, InfoFileName);
 end;
 
-{ Load user configurable settings, with defaults as fallback }
-procedure LoadSettings;
+{ Load games from the cache, or scan for them if there's no cache or scan is true.
+  Returns true if the games came from the cache }
+function LoadGames(scan:boolean):boolean;
 begin
-  VerboseOutput := GetConfigBool('VerboseOutput', false);
-  ScanPath := NormalizeDir(GetConfigString('ScanPath', 'C:\GAMES\'));
-  InfoFileName := GetConfigString('InfoFileName', '!GM_INFO.TXT');
-  HighlightedRow := GetConfigInt('HighlightedRow', 14);
-  if ( HighlightedRow < listMinRow ) or ( HighlightedRow >= listMaxRow ) then HighlightedRow := 14;
-  DelayAfterGameExit := GetConfigInt('DelayAfterGameExit', 0);
-  DelayOnStartup := GetConfigInt('DelayOnStartup', 0);
-  BlankLineFilter := GetConfigString('BlankLineFilter', '');
-  UseEmsForSwapFile := GetConfigBool('UseEmsForSwapFile', true);
-  EnablePlayStats := GetConfigBool('EnablePlayStats', true);
-  WaitForKeyAfterGame := GetConfigBool('WaitForKeyAfterGame', false);
-  DefaultSort := ParseSortMode(GetConfigString('DefaultSort', ''), smName);
-  DefaultView := ParseView(GetConfigString('DefaultView', ''), ModeInfo);
-  MaxGames := GetConfigInt('MaxGames', DefaultMaxGames);
+  LoadGames := false;
+  InitGames(MaxGames);
+  PlayStatsEnabled := EnablePlayStats;
 
-  { Theme colours }
-  ColorBackground := GetConfigColor('ColorBackground',Blue);
-  ColorText := GetConfigColor('ColorText',White);
-  ColorFrame := GetConfigColor('ColorFrame',White);
-  { Heading }
-  ColorHeadingBackground := GetConfigColor('ColorHeadingBackground',Red);
-  ColorHeadingText := GetConfigColor('ColorHeadingText',Yellow);
-  { Hihghlight }
-  ColorHighlightBackground := GetConfigColor('ColorHighlightBackground',Green);
-  ColorHighlightText := GetConfigColor('ColorHighlightText',Yellow);
-  { Horizontal menu }
-  ColorHorizontalMenuPrimaryText := GetConfigColor('ColorHorizontalMenuPrimaryText',White);
-  ColorHorizonalMenuHighlightText := GetConfigColor('ColorHorizonalMenuHighlightText',Blue);
-  ColorHorizonalMenuHighlightBackground := GetConfigColor('ColorHorizonalMenuHighlightBackground',White);
-end;
-
-{ Currently highlighted game, nil if the filter matches nothing }
-function HighlightedGame:PGame;
-begin
-  HighlightedGame := ViewGame(offset);
-end;
-
-{ ////////////////// Games list ////////////////// }
-procedure scrollTo(index:integer);
-begin
-  if ( index > ViewCount - 1 ) then index := ViewCount - 1;
-  if ( index < 0 ) then index := 0;
-  offset := index;
-end;
-
-procedure scrollingList;
-var
-  game:PGame;
-  gameIndex:integer;
-  row:byte;
-  nameWidth:byte;
-begin
-  nameWidth := columns div 2 - 4; { 3 columns + 1 left padding = 4}
-  if ( Mode = ModeFullScreen ) then
-    nameWidth := developerColumn - listStartColumn - 1;
-
-  { Heading }
-  gotoxy(listStartColumn,listHeaderRow);
-  TextBackground(ColorHeadingBackground);
-  TextColor(ColorHeadingText);
-  if ( Mode = ModeFullScreen ) then
-    write(PadColumn('Name', developerColumn - listStartColumn),
-          PadColumn('Developer', genreColumn - developerColumn),
-          PadColumn('Genre', yearColumn - genreColumn),
-          PadRight('Year', columns - yearColumn))
-  else
-    write(PadRight('Name', nameWidth + 1));
-
-  for row := listMinRow to listMaxRow - 1 do begin
-    { Game to display - the highlighted game is always on HighlightedRow }
-    gameIndex := integer(row) - integer(HighlightedRow) + offset;
-    game := ViewGame(gameIndex);
-
-    gotoxy(listStartColumn, row);
-
-    if ( row = HighlightedRow ) and ( game <> nil ) then begin
-      TextBackground(ColorHighlightBackground);
-      TextColor(ColorHighlightText);
-    end else begin
-      TextBackground(ColorBackground);
-      TextColor(ColorText);
+  if not scan and CacheGames then
+    if LoadGameCache(ExeDir + CacheFileName, ScanPath, InfoFileName) and ( GameCount > 0 ) then begin
+      LoadGames := true;
+      exit;
     end;
 
-    if ( game = nil ) then begin
-      { No game - show blank row }
-      if ( Mode = ModeFullScreen ) then
-        write(PadRight(BlankLineFilter, columns - listStartColumn))
-      else
-        write(PadRight(BlankLineFilter, nameWidth + 1));
-    end
-    else if ( Mode = ModeFullScreen ) then
-      write(PadColumn(PStr(game^.Name), developerColumn - listStartColumn),
-            PadColumn(PStr(game^.Developer), genreColumn - developerColumn),
-            PadColumn(PStr(game^.Genre), yearColumn - genreColumn),
-            PadRight(PStr(game^.Year), columns - yearColumn))
-    else
-      write(PadRight(PStr(game^.Name), nameWidth + 1));
-  end;
+  InitGames(MaxGames);
+  ScanForInfoFiles(ScanPath, InfoFileName);
+  if ( GameCount > 0 ) then SaveCache;
 end;
 
-{ Draw text in centre of screen}
-procedure DrawCenter(text:string);
-var
-  padding:byte;
-begin
-  padding := (columns - length(text)) div 2;
-
-  drawBlanks(padding);
-  write(text);
-  drawBlanks(columns - length(text) - padding);
-end;
-
-procedure drawHelpPanel;
-begin
-  resetLineDrawing(ColorBackground);
-
-  writeLine(' Help: ' + ApplicationName, ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Enter  Execute current action', ColorText, ColorBackground);
-  writeLine(' Esc    Clear filter, back or exit', ColorText, ColorBackground);
-  writeLine(' ' + #26 + ' ' + #27 + '    Highlight next/previous command', ColorText, ColorBackground);
-  writeLine(' ' + #24 + ' ' + #25 + '    Highlight previous/next game', ColorText, ColorBackground);
-  writeLine(' PgUp   Move games list up one page', ColorText, ColorBackground);
-  writeLine(' PgDn   Move games list down one page', ColorText, ColorBackground);
-  writeLine(' Home   Move to top of games list', ColorText, ColorBackground);
-  writeLine(' End    Move to bottom of games list', ColorText, ColorBackground);
-  writeLine(' A-Z    Type to filter games by name', ColorText, ColorBackground);
-  blankLine;
-  writeLine(' F1 Help            F2 Game info', ColorText, ColorBackground);
-  writeLine(' F3 Status          F4 Full screen', ColorText, ColorBackground);
-  blankLine;
-  writeLine(' F5 Sort by name    F6 Sort by dev', ColorText, ColorBackground);
-  writeLine(' F7 Sort by year    F8 Sort by genre', ColorText, ColorBackground);
-  writeLine(' F9 Most played     F10 Most playtime', ColorText, ColorBackground);
-  blankLine;
-  writeLine(' github.com/MaverickUK/GameMinder', ColorText, ColorBackground);
-
-  blankRemainingLines;
-end;
-
-{ Volume label of a drive e.g. 'C', blank if none }
-function VolumeLabel(drive:char):string;
-var
-  S:SearchRec;
-  name:string;
-begin
-  VolumeLabel := '';
-  FindFirst(drive + ':\*.*', VolumeID, S);
-  if ( DosError = 0 ) then begin
-    name := S.Name;
-    { Labels over 8 characters are returned in 8.3 form }
-    if ( pos('.', name) > 0 ) then delete(name, pos('.', name), 1);
-    VolumeLabel := name;
-  end;
-end;
-
-{ Conventional memory installed, from the BIOS }
-function ConventionalMemoryKB:word;
-var
-  regs:Registers;
-begin
-  Intr($12, regs);
-  ConventionalMemoryKB := regs.AX;
-end;
-
-{ Free memory in GameMinder's heap }
-function HeapFree:longint;
-begin
-  {$IFDEF FPC}
-  HeapFree := GetHeapStatus.TotalFree;
-  {$ELSE}
-  HeapFree := MemAvail;
-  {$ENDIF}
-end;
-
-procedure drawSystemStatus;
-var
-  drive:char;
-  driveNumber:byte;
-  total,free:longint;
-  currentDir:string;
-begin
-  { Show the drive games are scanned from }
-  if ( length(ScanPath) >= 2 ) and ( ScanPath[2] = ':' ) then
-    drive := UpCase(ScanPath[1])
-  else begin
-    GetDir(0, currentDir);
-    drive := UpCase(currentDir[1]);
-  end;
-  driveNumber := ord(drive) - ord('A') + 1;
-  total := DiskSize(driveNumber);
-  free := DiskFree(driveNumber);
-
-  resetLineDrawing(ColorBackground);
-
-  writeLine(' System Status', ColorHeadingText, ColorHeadingBackground );
-  writeLine(' ' + GetFormattedDate + '  ' + GetFormattedTime, ColorText, ColorBackground);
-  blankLine;
-  writeLine(' Drive ' + drive + ' Status', ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Volume label: ' + VolumeLabel(drive), ColorText, ColorBackground );
-  writeLine(' Storage total: ' + FormatBytes(total), ColorText, ColorBackground );
-  if ( total >= 0 ) and ( free >= 0 ) then
-    writeLine(' Storage used: ' + FormatBytes(total - free), ColorText, ColorBackground );
-  writeLine(' Storage free: ' + FormatBytes(free), ColorText, ColorBackground );
-  blankLine;
-  writeLine(' Memory Status', ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Conventional RAM: ' + ConvertToString(ConventionalMemoryKB) + ' KB', ColorText, ColorBackground );
-  writeLine(' GameMinder heap free: ' + FormatBytes(HeapFree), ColorText, ColorBackground );
-  blankLine;
-  writeLine(' Games', ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Found: ' + ConvertToString(GameCount) + '  Showing: ' + ConvertToString(ViewCount),
-            ColorText, ColorBackground );
-  if ( GameCapReached ) then
-    writeLine(' Limit reached - raise MaxGames', ColorText, ColorBackground );
-
-  blankRemainingLines;
-end;
-
-procedure drawInfoPanel;
-var
-  game:PGame;
-begin
-  game := HighlightedGame;
-  resetLineDrawing(ColorBackground);
-
-  if ( game = nil ) then begin
-    writeLine(' No games found', ColorHeadingText, ColorHeadingBackground );
-    writeLine(' Nothing matches "' + CurrentFilter + '"', ColorText, ColorBackground );
-    writeLine(' Press Esc to clear the filter', ColorText, ColorBackground );
-    blankRemainingLines;
-    exit;
-  end;
-
-  writeLine(' ' + PStr(game^.Name), ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Developer: ' + PStr(game^.Developer), ColorText, ColorBackground );
-  writeLine(' Genre: ' + PStr(game^.Genre), ColorText, ColorBackground );
-  writeLine(' Year: ' + PStr(game^.Year), ColorText, ColorBackground );
-  blankLine;
-  writeLine(' Video: ' + PStr(game^.Video), ColorText, ColorBackground );
-  writeLine(' Sound: ' + PStr(game^.Sound), ColorText, ColorBackground );
-  blankLine;
-  writeLine(' Path: ' + PStr(game^.Path), ColorText, ColorBackground );
-  writeLine(' Exec: ' + PStr(game^.Exec), ColorText, ColorBackground );
-  blankLine;
-
-  if ( EnablePlayStats ) then begin
-    writeLine(' Play stats', ColorHeadingText, ColorHeadingBackground );
-    writeLine(' Played: ' + ConvertToString(game^.TimesPlayed), ColorText, ColorBackground );
-    if ( game^.LastPlayed = nil ) then
-      writeLine(' Last played: N/A', ColorText, ColorBackground )
-    else
-      writeLine(' Last played: ' + PStr(game^.LastPlayed), ColorText, ColorBackground );
-    writeLine(' Time playing: ' + MinutesToFriendlyTime(game^.MinutesPlayed), ColorText, ColorBackground );
-  end;
-
-  blankRemainingLines;
-end;
-
-{ Redraw the right hand panel for the current mode }
-procedure drawPanel;
-begin
-  case( Mode ) of
-    ModeHelp: drawHelpPanel;
-    ModeInfo: drawInfoPanel;
-    ModeStatus: drawSystemStatus;
-    { ModeFullScreen: games list uses whole screen }
-  end;
-end;
-
-{ ////////////////// Horizontal menu ////////////////// }
-
-function MenuCount(menu:byte):byte;
-begin
-  case menu of
-    MenuSort: MenuCount := 6;
-    MenuFilter: MenuCount := 2;
-  else
-    MenuCount := 7;
-  end;
-end;
-
-procedure GetMenuItem(menu:byte; index:byte; var item:TMenuItem);
-begin
-  case menu of
-    MenuSort: item := SortMenu[index];
-    MenuFilter: item := FilterMenu[index];
-  else
-    item := PrimaryMenu[index];
-  end;
-end;
-
-{ Render the horizonal menu that appears at the top of the scren }
-procedure renderHorizonalMenu;
-var
-  i:byte;
-  item:TMenuItem;
-begin
-  { Clear }
-  gotoxy(1,1);
-  TextColor(ColorHorizontalMenuPrimaryText);
-  TextBackground(ColorBackground);
-  drawBlanks(columns);
-
-  { Primary nav }
-  gotoxy(1,1);
-
-  for i := 0 to MenuCount(hMenu) - 1 do begin
-    GetMenuItem(hMenu, i, item);
-
-    if ( i = hIndex ) then begin
-      TextColor(ColorHorizonalMenuHighlightText);
-      TextBackground(ColorHorizonalMenuHighlightBackground);
-    end
-    else begin
-      TextColor(ColorHorizontalMenuPrimaryText);
-      TextBackground(ColorBackground);
-    end;
-
-    write(item.Caption);
-
-    TextColor(ColorText);
-    TextBackground(ColorBackground);
-    write('  '); { Spacer }
-  end;
-
-  { Secondary nav - describe highlighted option }
-  GetMenuItem(hMenu, hIndex, item);
-  gotoxy(1,2);
-  write(PadRight(item.Hint, columns));
-
-  { Application name }
-  gotoxy(columns - length(ApplicationName) + 1, 1);
-  TextColor(ColorHorizonalMenuHighlightText);
-  TextBackground(ColorHorizonalMenuHighlightBackground);
-  write(ApplicationName);
-end;
-
-{ Change selected horizonal menu option, looping round }
-procedure changeHorizonalMenu(movement:shortint);
-var
-  desired:integer;
-begin
-  desired := hIndex + movement;
-  if ( desired < 0 ) then desired := MenuCount(hMenu) - 1;
-  if ( desired >= MenuCount(hMenu) ) then desired := 0;
-  hIndex := desired;
-end;
-
-procedure showMenu(menu:byte; index:byte);
-begin
-  hMenu := menu;
-  hIndex := index;
-end;
-
-{ ////////////////// Frame overlays ////////////////// }
-
-procedure RenderSortBy;
-begin
-  gotoxy(5,rows);
-  write(#185, ' Sorted by ', SortModeName(CurrentSort), ' ', #204);
-end;
-
-procedure RenderFilter;
-begin
-  if ( length(CurrentFilter) = 0 ) then exit;
-  gotoxy(columns div 2 + 3, rows);
-  write(#185, ' Filter: ', CurrentFilter, ' ', #204);
-end;
-
-{ Draw screen facade }
-procedure SetupScreen(drawMode:TDrawScreenMode);
-begin
-    {https://putka-upm.acm.si/langref/turboPascal/0511.html}
-    TextColor(ColorFrame);
-    TextBackground(ColorBackground);
-
-    if ( drawMode = All ) then clrscr;
-
-    drawFrame(mode, drawMode,1,3,columns,rows);
-
-  { Overlays }
-  if (drawMode = All) or (drawMode = OnlyFrame) or (drawMode = OnlyBottom ) then begin
-    RenderSortBy;
-    RenderFilter;
-  end;
-end;
+{ ////////////////// Screen ////////////////// }
 
 { Redraw everything }
 procedure RedrawAll;
@@ -523,175 +67,22 @@ begin
   drawPanel;
 end;
 
-{ ////////////////// Sorting & filtering ////////////////// }
-
-{ Change the current games sort order, keeping the highlighted game }
-procedure SortBy(sortMode:TSortMode);
-var
-  game:PGame;
+{ Plain text screen used while scanning and running games }
+procedure ShowTitleScreen;
 begin
-  game := HighlightedGame;
-  SortGames(sortMode);
-  scrollTo(IndexInView(game));
-  SetupScreen(OnlyBottom);
+  TextColor(White);
+  TextBackground(Black);
+  clrscr;
+
+  TextColor(White);
+  TextBackground(Blue);
+  DrawCenter(ApplicationName);
+
+  TextColor(White);
+  TextBackground(Black);
 end;
 
-{ Change the filter, keeping the highlighted game if it still matches }
-procedure SetFilter(filter:string);
-var
-  game:PGame;
-  index:integer;
-begin
-  game := HighlightedGame;
-  ApplyFilter(filter);
-
-  index := IndexInView(game);
-  if ( index < 0 ) then index := 0;
-  scrollTo(index);
-
-  SetupScreen(OnlyBottom);
-end;
-
-{ ////////////////// Running games ////////////////// }
-
-{ Where to put the swap file - %TEMP% if set, otherwise next to GAMEMIND.EXE }
-function SwapFilePath:string;
-var
-  temp:string;
-begin
-  temp := GetEnv('TEMP');
-  if ( length(temp) = 0 ) then temp := ExeDir;
-  SwapFilePath := NormalizeDir(temp) + SwapFileName;
-end;
-
-{ Launch an external executable, returning 0 on success or a DOS error code }
-function Execute(prog:string; args:string; gameDir:string):word;
-var
-  Status : Word;
-  OriginalDir: String;
-begin
-  Status := 0;
-
-  { Change to game's drive and directory - ChDir also changes drive }
-  GetDir(0,OriginalDir);
-  VerboseWriteln('GameMinder directory is ' + OriginalDir);
-  VerboseWriteln('Changing directory to ' + StripTrailingSlash(gameDir));
-  {$I-}
-  ChDir(StripTrailingSlash(gameDir));
-  {$I+}
-  Status := IOResult;
-  if ( Status <> 0 ) then begin
-    Execute := Status;
-    exit;
-  end;
-
-  VerboseWriteln('Executing ' + prog + ' ' + args);
-
-  UseEmsIfAvailable := UseEmsForSwapFile;
-
-  {function InitExecSwap(LastToSave : Pointer; SwapFileName : String) : Boolean;
-  -Initialize for swapping, returning TRUE if successful}
-  if not InitExecSwap(HeapPtr, SwapFilePath) then begin
-    WriteLn('Error: Unable to allocate swap space');
-    Status := 8; { Not enough memory }
-  end
-  else begin
-    if ( EmsAllocated ) then
-      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to EMS')
-    else
-      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to ' + SwapFilePath);
-    writeln('');
-    SwapVectors;
-    Status := ExecWithSwap(prog, args);
-    SwapVectors;
-    ShutdownExecSwap;
-  end;
-
-  VerboseWriteln('Changing directory back to ' + OriginalDir);
-  {$I-}
-  ChDir(OriginalDir);
-  {$I+}
-  if ( IOResult <> 0 ) then ; { Clear error - nothing else we can do }
-
-  Execute := Status;
-end;
-
-{ Run a game and record play stats. Interactive waits for a key after errors,
-  returns 0 on success or a DOS error code }
-function LaunchGame(game:PGame; interactive:boolean):word;
-var
-  prog,args:string;
-  status:word;
-  y,m,d,dow,h,min,s,hund:word;
-  startDay:longint;
-  startMinute:word;
-  playTimeMinutes:longint;
-begin
-  BuildLaunchCommand(PStr(game^.Path), PStr(game^.Exec), GetEnv('COMSPEC'), prog, args);
-
-  if ( interactive ) then begin
-    TextBackground(Black);
-    clrscr;
-
-    TextColor(White);
-    TextBackground(Blue);
-    DrawCenter('GameMinder');
-
-    TextColor(White);
-    TextBackground(Black);
-    ShowCursor;
-  end;
-
-  writeln('Starting ', PStr(game^.Name));
-
-  GetDate(y,m,d,dow);
-  GetTime(h,min,s,hund);
-  startDay := DayNumber(y,m,d);
-  startMinute := h * 60 + min;
-
-  if ( EnablePlayStats ) then
-    AppendPlayLog(game, PlayStatsFile_StartMarker + GetFormattedDate + ' ' + GetFormattedTime);
-
-  status := Execute(prog, args, PStr(game^.Path));
-
-  { Games can leave the screen in a graphics mode }
-  if ( interactive ) then TextMode(StartupVideoMode);
-
-  if ( status <> 0 ) then begin
-    TextColor(LightRed);
-    writeln('');
-    writeln('Unable to run ', prog, ' ', args);
-    writeln(DosErrorText(status));
-    TextColor(White);
-    if ( interactive ) then begin
-      writeln('');
-      writeln('Press any key to return to GameMinder');
-      ReadKey;
-    end;
-  end
-  else begin
-    if ( EnablePlayStats ) then begin
-      GetDate(y,m,d,dow);
-      GetTime(h,min,s,hund);
-      playTimeMinutes := ElapsedMinutes(startDay, startMinute, DayNumber(y,m,d), h * 60 + min);
-      VerboseWriteln('Logging play time of ' + ConvertToString(playTimeMinutes) + ' minute(s)');
-      AppendPlayLog(game, PlayStatsFile_MinutesPlayedMarker + ConvertToString(playTimeMinutes));
-    end;
-
-    if ( WaitForKeyAfterGame ) and ( interactive ) then begin
-      writeln('');
-      writeln('Press any key to return to GameMinder');
-      ReadKey;
-    end;
-
-    Delay(DelayAfterGameExit);
-  end;
-
-  { Reload game details, to include updated play stats }
-  if ( EnablePlayStats ) then LoadPlayStats(game);
-
-  LaunchGame := status;
-end;
+{ ////////////////// Actions ////////////////// }
 
 { Start the currently selected game }
 procedure ExecuteGame;
@@ -701,31 +92,54 @@ begin
   game := HighlightedGame;
   if ( game = nil ) then exit;
 
-  LaunchGame(game, true);
+  if ( LaunchGame(game, true) <> LaunchCancelled ) then
+    SaveCache; { Updated play stats }
 
   { Restart Gameminder UI }
+  ApplyScreenMode;
   HideCursor;
   RedrawAll;
 end;
 
-{ ////////////////// Startup ////////////////// }
-
-{ Read settings from SETTINGS.TXT next to GAMEMIND.EXE, wherever it's run from }
-function LoadSettingsFile:boolean;
+{ Scan for games again, keeping the sort, filter and highlighted game }
+procedure RescanGames;
 var
-  found:boolean;
+  sortMode:TSortMode;
+  filter:string;
+  highlightedPath:string;
+  i:integer;
 begin
-  found := LoadConfigFile(ExeDir + SettingsFileName);
-  LoadSettings;
-  LoadSettingsFile := found;
+  sortMode := CurrentSort;
+  filter := CurrentFilter;
+  highlightedPath := '';
+  if ( HighlightedGame <> nil ) then highlightedPath := PStr(HighlightedGame^.Path);
+
+  ShowTitleScreen;
+  writeln('Scanning ', ScanPath, ' for ', InfoFileName, ' files');
+  ShowScanProgress := true;
+  LoadGames(true);
+  ShowScanProgress := false;
+
+  CurrentFilter := filter;
+  SortGames(sortMode);
+
+  scrollTo(0);
+  for i := 0 to ViewCount - 1 do
+    if ( PStr(ViewGame(i)^.Path) = highlightedPath ) then scrollTo(i);
+
+  RedrawAll;
 end;
+
+{ ////////////////// Command line ////////////////// }
 
 procedure ShowUsage;
 begin
   writeln(ApplicationName, ' - DOS games launcher');
   writeln('');
-  writeln('GAMEMIND [/LIST] [/RUN name] [/V] [/?]');
+  writeln('GAMEMIND [/50] [/SCAN] [/LIST] [/RUN name] [/V] [/?]');
   writeln('');
+  writeln('  /50        Show 50 lines on VGA (43 on EGA), for more games on screen');
+  writeln('  /SCAN      Scan for games rather than using the saved list');
   writeln('  /LIST      Print the games found and exit');
   writeln('  /RUN name  Run the first game whose name contains name, then exit');
   writeln('  /V         Show version');
@@ -740,21 +154,21 @@ var
 begin
   ListOnly := false;
   RunName := '';
-
-  { Switches only produce text, so use DOS output rather than Crt,
-    allowing it to be redirected e.g. GAMEMIND /LIST > GAMES.TXT }
-  if ( ParamCount > 0 ) then begin
-    Assign(Output, '');
-    Rewrite(Output);
-  end;
+  ForceScan := false;
 
   i := 1;
   while ( i <= ParamCount ) do begin
     param := UpStr(ParamStr(i));
     if ( param = '/V' ) or ( param = '-V' ) or ( param = '/VERSION' ) then begin
+      Assign(Output, '');
+      Rewrite(Output);
       writeln(ApplicationName);
       Halt(0);
     end
+    else if ( param = '/50' ) or ( param = '-50' ) or ( param = '/43' ) or ( param = '-43' ) then
+      ScreenLines := 50
+    else if ( param = '/SCAN' ) or ( param = '-SCAN' ) then
+      ForceScan := true
     else if ( param = '/LIST' ) or ( param = '-LIST' ) then
       ListOnly := true
     else if ( ( param = '/RUN' ) or ( param = '-RUN' ) ) and ( i < ParamCount ) then begin
@@ -762,21 +176,20 @@ begin
       RunName := ParamStr(i);
     end
     else begin
+      Assign(Output, '');
+      Rewrite(Output);
       ShowUsage;
       if ( param = '/?' ) or ( param = '-?' ) or ( param = '/H' ) then Halt(0) else Halt(1);
     end;
     inc(i);
   end;
-end;
 
-{ Load settings and scan for games without the UI, for /LIST and /RUN }
-procedure LoadGamesQuietly;
-begin
-  LoadSettingsFile;
-  InitGames(MaxGames);
-  PlayStatsEnabled := EnablePlayStats;
-  ScanForInfoFiles(ScanPath, InfoFileName);
-  SortGames(smName);
+  { /LIST and /RUN only produce text, so use DOS output rather than Crt,
+    allowing it to be redirected e.g. GAMEMIND /LIST > GAMES.TXT }
+  if ( ListOnly ) or ( length(RunName) > 0 ) then begin
+    Assign(Output, '');
+    Rewrite(Output);
+  end;
 end;
 
 { /RUN - run a game by name without the UI, exit code is non-zero if it couldn't be run }
@@ -784,7 +197,9 @@ procedure RunGame;
 var
   status:word;
 begin
-  LoadGamesQuietly;
+  LoadSettingsFile;
+  LoadGames(ForceScan);
+  SortGames(smName);
   ApplyFilter(RunName);
 
   if ( ViewCount = 0 ) then begin
@@ -794,6 +209,7 @@ begin
   end;
 
   status := LaunchGame(ViewGame(0), false);
+  SaveCache;
   DoneGames;
   if ( status <> 0 ) then Halt(2);
 end;
@@ -804,7 +220,9 @@ var
   i,found:integer;
   game:PGame;
 begin
-  LoadGamesQuietly;
+  LoadSettingsFile;
+  LoadGames(ForceScan);
+  SortGames(smName);
 
   for i := 0 to ViewCount - 1 do begin
     game := ViewGame(i);
@@ -817,22 +235,11 @@ begin
   if ( found = 0 ) then Halt(1);
 end;
 
+{ ////////////////// Startup ////////////////// }
+
 procedure Startup;
 begin
-  { init }
-  offset := 0;
-  showMenu(MenuPrimary, 0);
-
-  TextColor(White);
-  TextBackground(Black);
-  clrscr;
-
-  TextColor(White);
-  TextBackground(Blue);
-  DrawCenter(ApplicationName);
-
-  TextColor(White);
-  TextBackground(Black);
+  ShowTitleScreen;
 
   writeln('Using setup file ', ExeDir, SettingsFileName);
   if not LoadSettingsFile then begin
@@ -842,23 +249,23 @@ begin
   end;
   writeln('');
 
-  InitGames(MaxGames);
-  PlayStatsEnabled := EnablePlayStats;
+  writeln('Looking for games in ', ScanPath);
   ShowScanProgress := true;
-
-  writeln('Scanning ', ScanPath, ' for ', InfoFileName, ' files');
-  ScanForInfoFiles(ScanPath, InfoFileName);
-
-  if ( GameCount > 0 ) then begin
+  if LoadGames(ForceScan) then
+    writeln('Loaded ', GameCount, ' game(s) from ', CacheFileName, ' - use Rescan to look for new games')
+  else if ( GameCount > 0 ) then begin
     writeln('');
-    writeln('Scan complete, ', GameCount, ' game(s) found');
-    if ( GameCapReached ) then begin
-      TextColor(Yellow);
-      writeln('Only the first ', MaxGames, ' games were loaded - increase MaxGames in ', SettingsFileName);
-      TextColor(White);
-    end;
-  end
-  else begin
+    writeln('Scanned ', ScanPath, ', ', GameCount, ' game(s) found');
+  end;
+  ShowScanProgress := false;
+
+  if ( GameCapReached ) then begin
+    TextColor(Yellow);
+    writeln('Only the first ', MaxGames, ' games were loaded - increase MaxGames in ', SettingsFileName);
+    TextColor(White);
+  end;
+
+  if ( GameCount = 0 ) then begin
     TextColor(Red);
     writeln('');
     writeln('No ', InfoFileName, ' files found under any directories in ', ScanPath );
@@ -866,7 +273,7 @@ begin
     writeln('Each game needs to have a ', InfoFileName, ' file added which contains');
     writeln('details about the game GameMinder needs in order to detect it.');
     writeln('');
-    writeln('Please read the README.md file for instructions on to create these files');
+    writeln('Please read the QUICKSTART.md file for instructions on to create these files');
     writeln('or visit https://github.com/MaverickUK/GameMinder');
     TextColor(White);
     DoneGames;
@@ -890,10 +297,6 @@ var
     runMainLoop:boolean;
     item:TMenuItem;
 begin
-  ApplicationName := 'GameMinder v' + AppVersion;
-  ExeDir := DirOfPath(ParamStr(0));
-  StartupVideoMode := LastMode;
-
   ParseCommandLine;
 
   if ( ListOnly ) then begin
@@ -910,6 +313,7 @@ begin
 
   Startup;
 
+  ApplyScreenMode;
   HideCursor;
   RedrawAll;
 
@@ -927,8 +331,8 @@ begin
             {(( Games ))}
              #72 : scrollTo(offset - 1); { Up }
              #80 : scrollTo(offset + 1); { Down }
-             #73 : scrollTo(offset - pageSize); { Page up - jump up a page }
-             #81 : scrollTo(offset + pageSize); { Page down - jump down a page }
+             #73 : scrollTo(offset - PageSize); { Page up - jump up a page }
+             #81 : scrollTo(offset + PageSize); { Page down - jump down a page }
              #71 : scrollTo(0); { Home - jump to top }
              #79 : scrollTo(ViewCount - 1); { End - jump to bottom }
 
@@ -960,12 +364,14 @@ begin
               maRun: ExecuteGame;
               maSortMenu: showMenu(MenuSort, ord(CurrentSort));
               maFilterMenu: showMenu(MenuFilter, 0);
+              maRescan: RescanGames;
               maExit: runMainLoop := false; { Exit GameMinder }
               { --- Sort --- }
               maSortName: SortBy(smName);
               maSortDeveloper: SortBy(smDeveloper);
               maSortYear: SortBy(smYear);
               maSortGenre: SortBy(smGenre);
+              maSortType: SortBy(smType);
               maSortTimesPlayed: SortBy(smTimesPlayed);
               maSortTimePlayed: SortBy(smTimePlayed);
               { --- Filter --- }
@@ -976,9 +382,9 @@ begin
         if ( length(CurrentFilter) > 0 ) then
           SetFilter('')
         else if ( hMenu = MenuSort ) then
-          showMenu(MenuPrimary, 2)
+          showMenu(MenuPrimary, PrimarySortIndex)
         else if ( hMenu = MenuFilter ) then
-          showMenu(MenuPrimary, 1)
+          showMenu(MenuPrimary, PrimaryFilterIndex)
         else
           runMainLoop := false;
       end;
@@ -1008,6 +414,7 @@ begin
 
   { Exit splash screen }
   ShowCursor;
+  RestoreScreenMode;
   NormVideo;
   clrscr;
   DoneGames;

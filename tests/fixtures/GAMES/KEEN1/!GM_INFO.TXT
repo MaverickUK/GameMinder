@@ -5,3 +5,5 @@ genre:Platform
 year:1991
 video:EGA
 sound:PC Speaker
+type:Shareware
+memory:512K

@@ -123,6 +123,13 @@ begin
 
   CheckStr('DosErrorText known', 'File not found', DosErrorText(2));
   CheckStr('DosErrorText unknown', 'DOS error 99', DosErrorText(99));
+
+  CheckInt('ParseMemoryKB number', 580, ParseMemoryKB('580'));
+  CheckInt('ParseMemoryKB K', 580, ParseMemoryKB(' 580K '));
+  CheckInt('ParseMemoryKB KB', 580, ParseMemoryKB('580kb'));
+  CheckInt('ParseMemoryKB invalid', 0, ParseMemoryKB('lots'));
+  CheckInt('ParseMemoryKB too big', 0, ParseMemoryKB('4096'));
+  CheckInt('ParseMemoryKB blank', 0, ParseMemoryKB(''));
 end;
 
 procedure TestStrings;
@@ -217,6 +224,9 @@ begin
   CheckStr('LoadInfoFile exec', 'keen1.exe', PStr(game^.Exec));
   CheckStr('LoadInfoFile mixed case key', 'id software', PStr(game^.Developer));
   CheckStr('LoadInfoFile sound', 'PC Speaker', PStr(game^.Sound));
+  CheckStr('LoadInfoFile type', 'Shareware', PStr(game^.GameType));
+  CheckInt('LoadInfoFile memory', 512, game^.MemoryKB);
+  CheckBool('LoadInfoFile no before', true, game^.Before = nil);
 
   LoadPlayStats(game);
   CheckInt('LoadPlayStats times played', 3, game^.TimesPlayed);
@@ -234,6 +244,13 @@ begin
 
   CheckBool('LoadInfoFile missing', true,
     LoadInfoFile(Fixtures + 'GAMES' + PathSep + 'NOSUCH' + PathSep, '!GM_INFO.TXT') = nil);
+
+  game := LoadInfoFile(Fixtures + 'GAMES' + PathSep + 'ACTION' + PathSep + 'DUNE' + PathSep, '!GM_INFO.TXT');
+  CheckBool('LoadInfoFile Dune', true, game <> nil);
+  if ( game <> nil ) then begin
+    CheckStr('LoadInfoFile before', 'C:\MOUSE\MOUSE.COM', PStr(game^.Before));
+    CheckStr('LoadInfoFile after', 'C:\MOUSE\MOUSE OFF', PStr(game^.After));
+  end;
 
   game := LoadInfoFile(Fixtures + 'GAMES' + PathSep + 'NONAME', '!GM_INFO.TXT');
   CheckBool('LoadInfoFile without name', true, game <> nil);
@@ -278,11 +295,16 @@ begin
   SortGames(smTimesPlayed);
   CheckStr('Sort by times played, most first', 'Commander Keen 1|doom|Dune|NONAME', ViewNames);
 
+  SortGames(smType);
+  CheckStr('Sort by type, missing type first', 'doom|NONAME|Dune|Commander Keen 1', ViewNames);
+
   SortGames(smName);
   ApplyFilter('keen');
   CheckStr('Filter by substring', 'Commander Keen 1', ViewNames);
   ApplyFilter('D');
   CheckStr('Filter keeps sort order', 'Commander Keen 1|doom|Dune', ViewNames);
+  ApplyFilter('SHAREWARE');
+  CheckStr('Filter matches type', 'Commander Keen 1', ViewNames);
   ApplyFilter('zzz');
   CheckInt('Filter with no matches', 0, ViewCount);
   CheckBool('ViewGame out of range', true, ViewGame(0) = nil);
@@ -356,11 +378,59 @@ begin
   CheckStr('SortModeName', 'developer', SortModeName(smDeveloper));
 end;
 
+procedure TestCache;
+const
+  CacheFile = 'TESTCACH.TXT';
+var
+  game:PGame;
+  scanPath:string;
+  f:Text;
+begin
+  scanPath := Fixtures + 'GAMES';
+
+  InitGames(DefaultMaxGames);
+  CheckBool('LoadGameCache missing file', false, LoadGameCache(CacheFile, scanPath, '!GM_INFO.TXT'));
+
+  PlayStatsEnabled := true;
+  ScanForInfoFiles(scanPath, '!GM_INFO.TXT');
+  CheckBool('SaveGameCache', true, SaveGameCache(CacheFile, scanPath, '!GM_INFO.TXT'));
+
+  InitGames(DefaultMaxGames);
+  CheckBool('LoadGameCache', true, LoadGameCache(CacheFile, scanPath, '!GM_INFO.TXT'));
+  CheckInt('LoadGameCache count', 4, GameCount);
+
+  SortGames(smName);
+  CheckStr('LoadGameCache names', 'Commander Keen 1|doom|Dune|NONAME', ViewNames);
+  game := ViewGame(0);
+  CheckStr('LoadGameCache path', NormalizeDir(scanPath) + 'KEEN1' + PathSep, PStr(game^.Path));
+  CheckStr('LoadGameCache exec', 'keen1.exe', PStr(game^.Exec));
+  CheckStr('LoadGameCache type', 'Shareware', PStr(game^.GameType));
+  CheckInt('LoadGameCache memory', 512, game^.MemoryKB);
+  CheckInt('LoadGameCache times played', 3, game^.TimesPlayed);
+  CheckInt('LoadGameCache minutes played', 65, game^.MinutesPlayed);
+  CheckStr('LoadGameCache last played', '2022/09/06 23:50', PStr(game^.LastPlayed));
+  game := ViewGame(1);
+  CheckStr('LoadGameCache arguments', 'DOOM.EXE -nomonsters', PStr(game^.Exec));
+  game := ViewGame(2);
+  CheckStr('LoadGameCache before', 'C:\MOUSE\MOUSE.COM', PStr(game^.Before));
+
+  InitGames(DefaultMaxGames);
+  CheckBool('LoadGameCache different scan path', false, LoadGameCache(CacheFile, Fixtures + 'SINGLE', '!GM_INFO.TXT'));
+  CheckInt('LoadGameCache different scan path is empty', 0, GameCount);
+  CheckBool('LoadGameCache different info file', false, LoadGameCache(CacheFile, scanPath, 'GAME.TXT'));
+  CheckBool('LoadGameCache scan path case-insensitive', true, LoadGameCache(CacheFile, UpStr(scanPath), '!gm_info.txt'));
+
+  Assign(f, CacheFile);
+  Erase(f);
+  DoneGames;
+end;
+
 { ////////////////// Launch ////////////////// }
 
 procedure TestLaunch;
 var
   prog,args:string;
+  script:TLaunchScript;
 begin
   BuildLaunchCommand('E:\GAMES\DOOM\', 'DOOM.EXE', 'C:\COMMAND.COM', prog, args);
   CheckStr('Launch exe on another drive', 'E:\GAMES\DOOM\DOOM.EXE', prog);
@@ -380,6 +450,21 @@ begin
 
   BuildLaunchCommand('C:\GAMES\X\', 'D:\TOOLS\RUN.COM', '', prog, args);
   CheckStr('Launch full path exec', 'D:\TOOLS\RUN.COM', prog);
+
+  CheckBool('NeedsLaunchScript none', false, NeedsLaunchScript('', ' '));
+  CheckBool('NeedsLaunchScript before', true, NeedsLaunchScript('MOUSE', ''));
+  CheckBool('NeedsLaunchScript after', true, NeedsLaunchScript('', 'MOUSE OFF'));
+
+  BuildLaunchScript('C:\GAMES\DOOM\', 'DOOM.EXE -nomonsters', ' C:\MOUSE\MOUSE.COM ', 'C:\MOUSE\MOUSE OFF', script);
+  CheckInt('Launch script lines', 4, script.Count);
+  CheckStr('Launch script echo off', '@ECHO OFF', script.Lines[1]);
+  CheckStr('Launch script before', 'C:\MOUSE\MOUSE.COM', script.Lines[2]);
+  CheckStr('Launch script game', 'C:\GAMES\DOOM\DOOM.EXE -nomonsters', script.Lines[3]);
+  CheckStr('Launch script after', 'C:\MOUSE\MOUSE OFF', script.Lines[4]);
+
+  BuildLaunchScript('C:\GAMES\DUNE\', 'dune.bat', '', 'MOUSE OFF', script);
+  CheckInt('Launch script without before', 3, script.Count);
+  CheckStr('Launch script calls batch file', 'CALL C:\GAMES\DUNE\dune.bat', script.Lines[2]);
 end;
 
 begin
@@ -400,6 +485,7 @@ begin
   TestScan;
   TestSortMany;
   TestSortModes;
+  TestCache;
   TestLaunch;
 
   writeln(Passes, ' passed, ', Failures, ' failed');

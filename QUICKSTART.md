@@ -23,6 +23,10 @@ This file holds the details GameMinder uses to list and run each game. It's made
 | **year** | Year game was released |
 | **video** | VGA, EGA, CGA etc. |
 | **sound** | PC Speaker, Sound Blaster etc. |
+| **type** | Full, Demo, Shareware, Freeware... |
+| **memory** | Conventional memory the game needs in KB, e.g. `580`. GameMinder warns if it won't fit |
+| **before** | Command run before the game, e.g. `C:\MOUSE\MOUSE.COM` |
+| **after** | Command run after the game, e.g. `C:\MOUSE\MOUSE OFF` |
 
 For example:
 
@@ -38,6 +42,8 @@ sound:PC Speaker
 
 Batch files are useful for games with several episodes or a setup step, e.g. `exec:start.bat`. Arguments can follow the file name, e.g. `exec:DOOM.EXE -nomonsters`.
 
+`before:` and `after:` run either side of the game, in the game's directory. If `before:` loads something that stays in memory (a TSR such as a mouse driver), unload it with `after:` (e.g. `MOUSE OFF`), otherwise GameMinder can't get its memory back when the game exits. Drivers you always need are best loaded before starting GameMinder.
+
 More examples are in the `EXAMPLES` directory of the zip.
 
 ## Controls
@@ -48,7 +54,7 @@ Page Up, Page Down, Home and End also scroll the games list.
 
 Enter launches the highlighted game, unless a different menu option is selected. For example, if **Exit** is selected, Enter quits GameMinder.
 
-Start typing to filter the list. For example, `KEEN` shows every game with Keen in its name. Backspace edits the filter.
+Start typing to filter the list. For example, `KEEN` shows every game with Keen in its name, and `DEMO` every demo. Backspace edits the filter.
 
 Esc clears the filter, or leaves a sub-menu (Sort or Filter). Otherwise it exits GameMinder.
 
@@ -65,6 +71,10 @@ Esc clears the filter, or leaves a sub-menu (Sort or Filter). Otherwise it exits
 | F9 | Sort games by times played |
 | F10 | Sort games by total time played |
 
+## Finding games
+
+The first time GameMinder runs it searches `ScanPath` for games, then remembers them in `GMCACHE.TXT` next to `GAMEMIND.EXE`, so later startups are quick. After adding, removing or editing games, choose **Rescan** from the menu, or start GameMinder with `GAMEMIND /SCAN`.
+
 ## Play stats
 
 While a game runs, GameMinder swaps itself out to EMS (or to a `SWAP.$$$` file on disk if there's no EMS), leaving only a ~2KB stub in memory, so games get almost all of your conventional memory. `UseEmsForSwapFile:false` always swaps to disk.
@@ -80,8 +90,9 @@ All configurable options are in this file, with a comment explaining each one, s
 | Setting | |
 |---|---|
 | `ScanPath` | Directory to search for games |
+| `CacheGames` | `false` to scan for games every time GameMinder starts |
 | `MaxGames` | Most games to load (default 1,000, up to 16,000) |
-| `DefaultSort` | Sort order on startup: `Name`, `Developer`, `Year`, `Genre`, `TimesPlayed` or `TimePlayed` |
+| `DefaultSort` | Sort order on startup: `Name`, `Developer`, `Year`, `Genre`, `Type`, `TimesPlayed` or `TimePlayed` |
 | `DefaultView` | Right hand panel on startup: `Help`, `Info`, `Status` or `Full` |
 | `WaitForKeyAfterGame` | Pause after a game exits, to read any messages it left |
 | `Color...` | Colour theme |
@@ -92,6 +103,8 @@ If `SETTINGS.TXT` is missing, GameMinder uses the defaults. It must be in the sa
 
 | | |
 |---|---|
+| `GAMEMIND /50` | Show 50 lines on VGA (43 on EGA), for more games on screen. Combine with other switches, e.g. `GAMEMIND /50 /SCAN` |
+| `GAMEMIND /SCAN` | Scan for games rather than using the saved list, can be used with `/LIST` and `/RUN` |
 | `GAMEMIND /V` | Show the version |
 | `GAMEMIND /LIST` | Print the games found and exit, e.g. `GAMEMIND /LIST > GAMES.TXT` |
 | `GAMEMIND /RUN name` | Run the first game whose name contains *name*, e.g. `GAMEMIND /RUN keen`, then exit |

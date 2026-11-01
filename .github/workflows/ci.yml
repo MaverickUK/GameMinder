@@ -133,10 +133,11 @@ jobs:
               -c "CALL SESSION.BAT" -c "exit" > /dev/null 2>&1 || echo "DOSBox timed out running: $*"
           }
 
-          dos "GAMEMIND.EXE /V > VER.TXT" "GAMEMIND.EXE /LIST > LIST.TXT" "TESTS.EXE D:\\ > TESTS.TXT"
+          dos "GAMEMIND.EXE /V > VER.TXT" "GAMEMIND.EXE /LIST > LIST.TXT" "GAMEMIND.EXE /LIST > LIST2.TXT" "TESTS.EXE D:\\ > TESTS.TXT"
           dos "MEMFREE.EXE C:\\BASE.TXT"
           dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNEMS.TXT" "ren VIAGM.TXT VIAEMS.TXT"
           dos "copy SETDISK.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNDISK.TXT" "ren VIAGM.TXT VIADISK.TXT"
+          dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /SCAN /RUN script > RUNSCRPT.TXT"
 
           # Everything again in one session, as a user would, checking GameMinder returns to DOS each time
           dos "GAMEMIND.EXE /LIST > NUL" "TESTS.EXE D:\\ > NUL" "MEMFREE.EXE C:\\NUL.TXT" \
@@ -147,7 +148,7 @@ jobs:
         if: always()
         run: |
           cd build/dos
-          for f in VER LIST TESTS BASE RUNEMS VIAEMS RUNDISK VIADISK SESSION; do
+          for f in VER LIST LIST2 TESTS BASE RUNEMS VIAEMS RUNDISK VIADISK RUNSCRPT VIASCRPT BEFORE AFTER SESSION; do
             echo "--- $f.TXT"; cat "$f.TXT" 2>/dev/null || echo "(missing)"
           done
           echo "--- !GM_LOG.TXT"; cat '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT' 2>/dev/null || echo "(missing)"
@@ -157,6 +158,9 @@ jobs:
           cd build/dos
           grep -q "GameMinder v$(../../scripts/check-version.sh)" VER.TXT
           diff --strip-trailing-cr ../../tests/smoke/EXPECTED.TXT LIST.TXT
+          # Second run uses the saved game list
+          ls GMCACHE.TXT
+          diff --strip-trailing-cr LIST.TXT LIST2.TXT
           grep -q " 0 failed" TESTS.TXT
 
       - name: Check memory left for games
@@ -176,6 +180,18 @@ jobs:
           [ "$(grep -c '^<' '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT')" -eq 4 ]
           # ...and returned to DOS each time in a single session
           grep -q EMS SESSION.TXT && grep -q DISK SESSION.TXT
+
+      - name: Check before/after commands and memory warning
+        run: |
+          cd build/dos
+          base=$(tr -d '\r ' < BASE.TXT)
+          script=$(tr -d '\r ' < VIASCRPT.TXT)
+          echo "Free memory for a game with before/after commands: ${script}KB (DOS prompt ${base}KB)"
+          grep -q before BEFORE.TXT
+          grep -q after AFTER.TXT
+          grep -q "needs 1000KB" RUNSCRPT.TXT
+          # COMMAND.COM runs the before/after commands, so allow a little more
+          [ $((base - script)) -le 16 ]
 
   package:
     name: Package release zip

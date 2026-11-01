@@ -9,6 +9,24 @@ Both use ExecSwap (TurboPower Software) to launch games: GameMinder swaps itself
 | ExecSwap | `EXECSWAP.TPU`, source in [EXECSWAP](EXECSWAP) (TASM) | [EXECSWAP/FPC](EXECSWAP/FPC): Pascal unit plus `SWAPCORE.ASM` (NASM) |
 | Use for | Local builds | Releases, CI builds and tests |
 
+## Source layout
+
+| File | |
+|---|---|
+| `GAMEMIND.PAS` | Startup, command line and main loop |
+| `PREFS.PAS` | Settings from `SETTINGS.TXT` |
+| `SCREEN.PAS` | Screen layout, frame and panel drawing |
+| `LISTVIEW.PAS` | Games list, scrolling, sorting and filtering |
+| `PANELS.PAS` | Help, game info and system status panels |
+| `MENU.PAS` | Horizontal menu |
+| `RUNNER.PAS` | Running games: swapping, before/after commands, memory check, play stats |
+| `GAMES.PAS` | Games data: info files, play logs, cache, sorting, filtering |
+| `LAUNCH.PAS` | Working out the command to run a game |
+| `CONFIG.PAS` | Reading `SETTINGS.TXT` |
+| `UTILITY.PAS` | Strings, paths, dates |
+
+`GAMES`, `LAUNCH`, `CONFIG`, `PREFS` and `UTILITY` don't use the screen, so they're unit tested on any OS.
+
 ## Turbo Pascal 7
 
 From the repository directory in DOS or DOSBox:

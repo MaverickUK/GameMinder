@@ -4,3 +4,6 @@ exec:dune.bat
 developer:Cryo
 genre:Strategy
 year:1992
+type:Full
+before:C:\MOUSE\MOUSE.COM
+after:C:\MOUSE\MOUSE OFF

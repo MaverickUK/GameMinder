@@ -1,6 +1,6 @@
 Unit Screen;
 {-----------------------------
-Screen drawing routines
+Screen layout, frame and right hand panel drawing routines
 ------------------------------}
 
 { --------- interface -------- }
@@ -9,19 +9,28 @@ interface
 type
   { Screen redraw modes }
   TDrawScreenMode = (All, OnlyFrame, OnlyTop, OnlyBottom);
-const
-  { Modes - TODO: Change to enum }
-  ModeHelp = 0;
-  ModeInfo = 1;
-  ModeStatus = 2;
-  ModeFullScreen = 3;
 
+const
+  columns = 80;
+  frameTop = 3;
+  panelTop = 4;                    { First row of the right hand panel }
+
+var
+  Mode:byte;          { Current view, ModeHelp..ModeFullScreen from Prefs }
+  ScreenRows:byte;    { Rows on screen e.g. 25 or 50 }
+  StartupVideoMode:word;
+
+procedure ApplyScreenMode;
+procedure RestoreScreenMode;
+function FrameBottom:byte;
+procedure DrawCenter(text:string);
 procedure drawBlanks(amount:byte);
 procedure resetLineDrawing(backColour:byte);
 procedure blankLine;
 procedure blankRemainingLines;
 procedure writeLine(text:string; textColour:byte; backColour:byte);
 procedure drawFrame(mode:byte; drawMode:TDrawScreenMode; x1,y1,x2,y2:byte);
+procedure SetupScreen(drawMode:TDrawScreenMode);
 procedure HideCursor;
 procedure ShowCursor;
 
@@ -29,18 +38,59 @@ procedure ShowCursor;
 implementation
 uses
     Crt,
-    Dos;
+    Dos,
+    Prefs,
+    Games;
 const
-  rows = 24;
-  columns = 80;
   panelColumn = columns div 2 + 1; { First column of the right hand panel }
   panelWidth = columns div 2 - 1;  { Up to, but not including, the right frame }
 var
   drawRow:byte;
   panelBackground:byte;
   originalCursorShape:word;
+  modeChanged:boolean;
 
 { --------- public --------- }
+
+{ Switch to the text mode for ScreenLines, 43/50 lines use the 8x8 font }
+procedure ApplyScreenMode;
+begin
+  if ( ScreenLines > 25 ) and ( (StartupVideoMode and $FF) <> Mono ) then begin
+    TextMode((StartupVideoMode and $FF) + Font8x8);
+    modeChanged := true;
+  end
+  else if ( Hi(WindMax) + 1 <> 25 ) then begin
+    TextMode(StartupVideoMode and $FF);
+    modeChanged := true;
+  end;
+
+  ScreenRows := Hi(WindMax) + 1;
+end;
+
+{ Put the screen back how it was when GameMinder started }
+procedure RestoreScreenMode;
+begin
+  if ( modeChanged ) then TextMode(StartupVideoMode);
+  modeChanged := false;
+end;
+
+{ Row of the bottom of the frame - the last row is left blank to avoid scrolling }
+function FrameBottom:byte;
+begin
+  FrameBottom := ScreenRows - 1;
+end;
+
+{ Draw text in centre of screen}
+procedure DrawCenter(text:string);
+var
+  padding:byte;
+begin
+  padding := (columns - length(text)) div 2;
+
+  drawBlanks(padding);
+  write(text);
+  drawBlanks(columns - length(text) - padding);
+end;
 
 { Draw blank characters to screen }
 procedure drawBlanks(amount:byte);
@@ -53,7 +103,7 @@ end;
 { Reset before drawing lines }
 procedure resetLineDrawing(backColour:byte);
 begin
-  drawRow := 4; { Starting row to draw}
+  drawRow := panelTop; { Starting row to draw}
   panelBackground := backColour;
 end;
 
@@ -69,13 +119,14 @@ end;
 { Draw blank remaining lines }
 procedure blankRemainingLines;
 begin
-  while drawRow < rows do
+  while drawRow < FrameBottom do
     blankLine;
 end;
 
 { Draw a line, truncated to fit the panel }
 procedure writeLine(text:string; textColour:byte; backColour:byte);
 begin
+  if ( drawRow >= FrameBottom ) then exit; { No room left }
   if ( length(text) > panelWidth ) then text[0] := chr(panelWidth);
 
   { Move to drawing position }
@@ -175,6 +226,41 @@ begin
 
 end;
 
+{ ////////////////// Frame overlays ////////////////// }
+
+procedure RenderSortBy;
+begin
+  gotoxy(5,FrameBottom);
+  write(#185, ' Sorted by ', SortModeName(CurrentSort), ' ', #204);
+end;
+
+procedure RenderFilter;
+begin
+  if ( length(CurrentFilter) = 0 ) then exit;
+  gotoxy(columns div 2 + 3, FrameBottom);
+  write(#185, ' Filter: ', CurrentFilter, ' ', #204);
+end;
+
+{ Draw screen facade }
+procedure SetupScreen(drawMode:TDrawScreenMode);
+begin
+    {https://putka-upm.acm.si/langref/turboPascal/0511.html}
+    TextColor(ColorFrame);
+    TextBackground(ColorBackground);
+
+    if ( drawMode = All ) then clrscr;
+
+    drawFrame(Mode, drawMode,1,frameTop,columns,FrameBottom);
+
+  { Overlays }
+  if (drawMode = All) or (drawMode = OnlyFrame) or (drawMode = OnlyBottom ) then begin
+    RenderSortBy;
+    RenderFilter;
+  end;
+end;
+
+{ ////////////////// Cursor ////////////////// }
+
 { Hide the text cursor using the video BIOS, works on CGA/EGA/VGA and MDA }
 procedure HideCursor;
 var
@@ -203,4 +289,8 @@ end;
 
 begin
   originalCursorShape := $0607; { Standard colour text mode underline cursor }
+  StartupVideoMode := LastMode;
+  modeChanged := false;
+  ScreenRows := Hi(WindMax) + 1;
+  Mode := ModeInfo;
 end.
