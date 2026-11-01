@@ -17,6 +17,8 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~F3 System Status~~ (0.2.0)
 - ~~More extendable horizontal menu~~ (0.2.0)
 - ~~Semantic versioning, unit tests and GitHub Actions builds~~ (0.2.0)
+- ~~Release builds swap GameMinder out of memory while games run~~ (0.2.1, ExecSwap ported to Free Pascal)
+- ~~Run a game from the command line~~ (0.2.1, `GAMEMIND /RUN name`)
 - Configure which columns are shown in half and full screen mode, and their widths, in `SETTINGS.TXT`
 - ASCII splash screen on exit
 
@@ -37,4 +39,3 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - Detect games automatically from a CSV database matching file names (and possibly sizes), perhaps a shared Google Sheet exported as CSV
 - Integrate with the [IGDB](https://www.igdb.com/) website
 - Optionally store game metadata centrally instead of in each game's directory
-- Launch the Free Pascal build with ExecSwap too, so CI-built releases use as little memory as Turbo Pascal builds

@@ -67,6 +67,8 @@ Esc clears the filter, or leaves a sub-menu (Sort or Filter). Otherwise it exits
 
 ## Play stats
 
+While a game runs, GameMinder swaps itself out to EMS (or to a `SWAP.$$$` file on disk if there's no EMS), leaving only a ~2KB stub in memory, so games get almost all of your conventional memory. `UseEmsForSwapFile:false` always swaps to disk.
+
 Each time you run a game, GameMinder records when you played it and for how long in a `!GM_LOG.TXT` file in the game's directory. F2 shows how many times you've played it, when you last played it, and your total play time. Games on read-only media such as CD-ROMs still run, but their stats aren't recorded.
 
 To turn this off, set `EnablePlayStats:false`.
@@ -92,6 +94,7 @@ If `SETTINGS.TXT` is missing, GameMinder uses the defaults. It must be in the sa
 |---|---|
 | `GAMEMIND /V` | Show the version |
 | `GAMEMIND /LIST` | Print the games found and exit, e.g. `GAMEMIND /LIST > GAMES.TXT` |
+| `GAMEMIND /RUN name` | Run the first game whose name contains *name*, e.g. `GAMEMIND /RUN keen`, then exit |
 | `GAMEMIND /?` | Show help |
 
 ## Current limitations

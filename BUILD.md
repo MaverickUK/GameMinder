@@ -1,11 +1,13 @@
 # Building GameMinder
 
-GameMinder builds with either **Turbo Pascal 7** (used for releases) or **Free Pascal** (used by GitHub Actions).
+GameMinder builds with either **Turbo Pascal 7** or **Free Pascal**. Releases are built by GitHub Actions with Free Pascal.
+
+Both use ExecSwap (TurboPower Software) to launch games: GameMinder swaps itself out to EMS or disk, leaving a ~2KB stub, so games get almost all conventional memory.
 
 | | Turbo Pascal 7 | Free Pascal (i8086-msdos) |
 |---|---|---|
-| Launching games | ExecSwap: GameMinder swaps to EMS/disk, leaving a ~2KB stub | Plain DOS `Exec`: GameMinder stays in memory (heap capped at 192KB) |
-| Use for | Releases, real hardware | CI builds and smoke tests |
+| ExecSwap | `EXECSWAP.TPU`, source in [EXECSWAP](EXECSWAP) (TASM) | [EXECSWAP/FPC](EXECSWAP/FPC): Pascal unit plus `SWAPCORE.ASM` (NASM) |
+| Use for | Local builds | Releases, CI builds and tests |
 
 ## Turbo Pascal 7
 
@@ -34,10 +36,16 @@ The [CI workflow](.github/workflows/ci.yml) shows the full steps. In summary:
    ```
    make crossall crossinstall CPU_TARGET=i8086 OS_TARGET=msdos CROSSOPT="-WmLarge -CX -XX" INSTALL_PREFIX=$HOME/fpc-msdos
    ```
-2. Compile:
+2. Assemble the ExecSwap core with [NASM](https://www.nasm.us/):
    ```
-   ppcross8086 -Tmsdos -WmLarge -Mtp -Fu. -Fu$HOME/fpc-msdos/lib/fpc/3.2.2/units/i8086-msdos/* -obuild/dos/GAMEMIND.EXE GAMEMIND.PAS
+   nasm -f obj -o EXECSWAP/FPC/SWAPCORE.OBJ EXECSWAP/FPC/SWAPCORE.ASM
    ```
+3. Compile:
+   ```
+   ppcross8086 -Tmsdos -WmLarge -Mtp -Fu. -FuEXECSWAP/FPC -FoEXECSWAP/FPC -Fu$HOME/fpc-msdos/lib/fpc/3.2.2/units/msdos/* -obuild/dos/GAMEMIND.EXE GAMEMIND.PAS
+   ```
+
+The swap core is linked into the same code segment as Free Pascal's startup code, which comes first in memory, so only the startup code and the core (~2KB) stay resident while a game runs.
 
 ## Tests
 
@@ -57,6 +65,8 @@ TESTS\TESTS TESTS\FIXTURES\
 ```
 
 CI also runs `TESTS.EXE` and `GAMEMIND /LIST` in DOSBox against the games in [tests/fixtures](tests/fixtures).
+
+It checks how much memory GameMinder leaves for games too: [tests/MEMFREE.PAS](tests/MEMFREE.PAS) records the conventional memory it's given, run from the DOS prompt and through `GAMEMIND /RUN memory`, swapping to EMS and to disk. The build fails if a game gets more than 8KB less than at the DOS prompt.
 
 ## Demo video
 
@@ -78,4 +88,4 @@ GameMinder uses [Semantic Versioning](https://semver.org). While below 1.0.0, MI
 3. Check they match: `scripts/check-version.sh`
 4. Commit, then tag and push: `git tag v0.2.0 && git push origin v0.2.0`
 
-The [release workflow](.github/workflows/release.yml) runs CI, then creates a **draft** GitHub release with a zip of the Free Pascal build and the changelog section as notes. Before publishing it, you can swap in a Turbo Pascal 7 build of `GAMEMIND.EXE` (recommended, so games get the memory ExecSwap frees). Versions with a pre-release suffix (e.g. `-beta.1`) are marked as pre-releases.
+The [release workflow](.github/workflows/release.yml) runs CI, then creates a **draft** GitHub release with a zip of the Free Pascal build and the changelog section as notes. Review it on GitHub, then publish. Versions with a pre-release suffix (e.g. `-beta.1`) are marked as pre-releases.

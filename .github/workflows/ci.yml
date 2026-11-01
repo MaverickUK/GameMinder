@@ -124,11 +124,13 @@ jobs:
           printf 'ScanPath:D:\\MEMTEST\r\nVerboseOutput:true\r\nUseEmsForSwapFile:true\r\n' > SETEMS.TXT
           printf 'ScanPath:D:\\MEMTEST\r\nVerboseOutput:true\r\nUseEmsForSwapFile:false\r\n' > SETDISK.TXT
 
-          # Run DOS commands in a fresh DOSBox, with C: = build/dos and D: = tests/fixtures
+          # Run DOS commands in a fresh DOSBox, with C: = build/dos and D: = tests/fixtures.
+          # Commands go in a batch file, as DOSBox only runs the first few -c options.
           dos() {
-            local args=(-c "mount c ." -c "mount d ../../tests/fixtures" -c "c:")
-            for cmd in "$@"; do args+=(-c "$cmd"); done
-            timeout 60 dosbox "${args[@]}" -c "exit" > /dev/null 2>&1 || echo "DOSBox timed out running: $*"
+            : > SESSION.BAT
+            for cmd in "$@"; do printf '%s\r\n' "$cmd" >> SESSION.BAT; done
+            timeout 120 dosbox -c "mount c ." -c "mount d ../../tests/fixtures" -c "c:" \
+              -c "CALL SESSION.BAT" -c "exit" > /dev/null 2>&1 || echo "DOSBox timed out running: $*"
           }
 
           dos "GAMEMIND.EXE /V > VER.TXT" "GAMEMIND.EXE /LIST > LIST.TXT" "TESTS.EXE D:\\ > TESTS.TXT"
