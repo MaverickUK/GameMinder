@@ -591,6 +591,14 @@ begin
 
   {function InitExecSwap(LastToSave : Pointer; SwapFileName : String) : Boolean;
   -Initialize for swapping, returning TRUE if successful}
+  {$IFDEF FPC}
+  VerboseWriteln('DEBUG HeapOrg ' + ConvertToString(Seg(HeapOrg^)) + ':' + ConvertToString(Ofs(HeapOrg^))
+    + ' HeapPtr ' + ConvertToString(Seg(HeapPtr^)) + ':' + ConvertToString(Ofs(HeapPtr^))
+    + ' HeapEnd ' + ConvertToString(Seg(HeapEnd^)) + ':' + ConvertToString(Ofs(HeapEnd^))
+    + ' FreeList ' + ConvertToString(Seg(FreeList^)) + ':' + ConvertToString(Ofs(FreeList^))
+    + ' PSP ' + ConvertToString(PrefixSeg) + ' SS ' + ConvertToString(SSeg) + ' DS ' + ConvertToString(DSeg)
+    + ' CS ' + ConvertToString(CSeg));
+  {$ENDIF}
   if not InitExecSwap(HeapPtr, SwapFilePath) then begin
     WriteLn('Error: Unable to allocate swap space');
     Status := 8; { Not enough memory }
@@ -794,7 +802,9 @@ begin
   end;
 
   status := LaunchGame(ViewGame(0), false);
+  VerboseWriteln('DEBUG launched');
   DoneGames;
+  VerboseWriteln('DEBUG done games');
   if ( status <> 0 ) then Halt(2);
 end;
 
