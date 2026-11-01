@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-11-01
 
 ### Added
 - Type to filter the games list by name (e.g. `KEEN` shows every Commander Keen game). Backspace edits, Esc clears
@@ -22,6 +22,7 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 - GitHub Actions: unit tests, a Free Pascal DOS build, a DOSBox smoke test and a packaged release zip on every change; tags create a draft release
 - Builds with Free Pascal (i8086-msdos) as well as Turbo Pascal 7 - see [BUILD.md](BUILD.md)
 - ExecSwap v1.3 source (in `EXECSWAP/`) alongside the prebuilt unit
+- [QUICKSTART.md](QUICKSTART.md) guide, also included in the release zip
 - [ROADMAP.md](ROADMAP.md), replacing the wiki roadmap
 
 ### Changed
@@ -65,4 +66,4 @@ Initial preview release.
 - Setting to turn off play stats
 
 [0.2.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.0
-[0.1.0]: https://www.vogons.org/viewtopic.php?p=1100857#p1100857
+[0.1.0]: https://github.com/MaverickUK/GameMinder/releases/tag/0.1.0
