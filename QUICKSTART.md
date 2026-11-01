@@ -5,7 +5,7 @@
 1. Download the latest zip from [Releases](https://github.com/MaverickUK/GameMinder/releases)
 2. Unzip `GAMEMIND.EXE` and `SETTINGS.TXT` to a directory of your choice on a DOS machine (real or virtual), e.g. `C:\GMIND`
 3. Edit `SETTINGS.TXT` and set **ScanPath** to the directory your games are in, e.g. `ScanPath:C:\GAMES`. It's searched recursively on startup, on any drive
-4. For each game you want GameMinder to list, create a **!GM_INFO.TXT** file in the game's directory (see below)
+4. Add your games: run GameMinder and choose **Add** (or press Ins) to pick a game directory and fill in its details. Or create a **!GM_INFO.TXT** file in each game's directory yourself (see below)
 5. Run `GAMEMIND`. You can run it from any directory, e.g. `C:\GMIND\GAMEMIND`
 
 If no games are found, GameMinder lists the directory it searched and exits. Check `ScanPath`, and that each game has a `!GM_INFO.TXT`.
@@ -70,6 +70,17 @@ Esc clears the filter, or leaves a sub-menu (Sort or Filter). Otherwise it exits
 | F8 | Sort games by genre |
 | F9 | Sort games by times played |
 | F10 | Sort games by total time played |
+| Ins | Add a game |
+| Del | Remove the highlighted game from GameMinder |
+
+## Adding, editing and removing games
+
+- **Add** (or Ins) lists the directories under `ScanPath` that have a program in them but no `!GM_INFO.TXT`. Choose one and GameMinder suggests a name and the program to run, then opens the game's details to check and fill in
+- **Edit** opens the highlighted game's details
+- In the details form, Up/Down move between fields, and **F10** (or Ctrl+S) saves. Esc cancels
+- **Delete** (or Del) removes the highlighted game from GameMinder by deleting its `!GM_INFO.TXT`. The game's own files, and its play stats, are left alone - add it again to bring it back
+
+GameMinder only changes the lines it uses in `!GM_INFO.TXT`, so your own comments stay put.
 
 ## Finding games
 

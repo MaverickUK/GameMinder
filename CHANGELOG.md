@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.5.0] - Unreleased
+
+### Added
+- **Add** (or Ins) lists directories under `ScanPath` with a program in but no `!GM_INFO.TXT`, then opens a form to fill in the game's details. The name and program to run are suggested, skipping SETUP and INSTALL programs
+- **Edit** opens a form with all of the highlighted game's details. Saving updates its `!GM_INFO.TXT`, keeping comments and anything GameMinder doesn't use
+- **Delete** (or Del) removes the highlighted game from GameMinder after asking, by deleting its `!GM_INFO.TXT`. The game's files and play log are kept
+
 ## [0.4.0] - 2026-11-01
 
 ### Added
@@ -102,6 +109,7 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.5.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.5.0
 [0.4.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.4.0
 [0.3.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.3.0
 [0.2.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.1

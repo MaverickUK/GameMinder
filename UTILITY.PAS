@@ -40,6 +40,8 @@ function PadRight(s:string; width:byte):string;
 function PadColumn(s:string; width:byte):string;
 function Trim(s:string):string;
 function UpStr(s:string):string;
+function LowerStr(s:string):string;
+function TitleCase(s:string):string;
 function CompareText(a,b:string):integer;
 function ContainsText(haystack,needle:string):boolean;
 function SplitKeyValue(line:string; var key:string; var value:string):boolean;
@@ -48,6 +50,7 @@ function NormalizeDir(path:string):string;
 function StripTrailingSlash(path:string):string;
 function DirOfPath(path:string):string;
 function FileExtension(fileName:string):string;
+function FileExists(fileName:string):boolean;
 
 { --------- implementation --------- }
 implementation
@@ -268,6 +271,32 @@ begin
   UpStr := s;
 end;
 
+function LowerStr(s:string):string;
+var
+  i:byte;
+begin
+  for i := 1 to length(s) do
+    if ( s[i] in ['A'..'Z'] ) then s[i] := chr(ord(s[i]) + 32);
+  LowerStr := s;
+end;
+
+{ Capitalise the first letter of each word e.g. MONKEY ISLAND -> Monkey Island }
+function TitleCase(s:string):string;
+var
+  i:byte;
+  startOfWord:boolean;
+begin
+  startOfWord := true;
+  for i := 1 to length(s) do begin
+    if ( startOfWord ) then
+      s[i] := UpCase(s[i])
+    else if ( s[i] in ['A'..'Z'] ) then
+      s[i] := chr(ord(s[i]) + 32);
+    startOfWord := ( s[i] in [' ', '_', '-'] );
+  end;
+  TitleCase := s;
+end;
+
 { Case-insensitive compare: <0 if a<b, 0 if equal, >0 if a>b }
 function CompareText(a,b:string):integer;
 var
@@ -359,6 +388,17 @@ begin
     dec(i);
   if ( i > 0 ) and ( fileName[i] = '.' ) then
     FileExtension := UpStr(copy(fileName, i + 1, 255));
+end;
+
+function FileExists(fileName:string):boolean;
+var
+  S:SearchRec;
+begin
+  FindFirst(fileName, ReadOnly + Hidden + SysFile + Archive, S);
+  FileExists := ( DosError = 0 );
+  {$IFDEF FPC}
+  FindClose(S);
+  {$ENDIF}
 end;
 
 begin

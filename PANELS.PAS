@@ -34,6 +34,7 @@ begin
   writeLine(' Home   Move to top of games list', ColorText, ColorBackground);
   writeLine(' End    Move to bottom of games list', ColorText, ColorBackground);
   writeLine(' A-Z    Type to filter by name or type', ColorText, ColorBackground);
+  writeLine(' Ins    Add game     Del  Remove game', ColorText, ColorBackground);
   blankLine;
   writeLine(' F1 Help            F2 Game info', ColorText, ColorBackground);
   writeLine(' F3 Status          F4 Full screen', ColorText, ColorBackground);

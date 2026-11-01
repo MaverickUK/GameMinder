@@ -85,17 +85,6 @@ begin
   WriteScript := ( IOResult = 0 );
 end;
 
-function FileExists(fileName:string):boolean;
-var
-  S:SearchRec;
-begin
-  FindFirst(fileName, ReadOnly + Hidden + SysFile + Archive, S);
-  FileExists := ( DosError = 0 );
-  {$IFDEF FPC}
-  FindClose(S);
-  {$ENDIF}
-end;
-
 procedure DeleteFile(fileName:string);
 var
   f:File;

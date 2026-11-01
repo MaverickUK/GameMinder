@@ -1,0 +1,2 @@
+name:Listed Game
+exec:GAME.EXE

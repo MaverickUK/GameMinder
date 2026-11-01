@@ -7,7 +7,7 @@ Startup, command line and the main input loop. The rest lives in units:
   PREFS     settings          LISTVIEW  games list       RUNNER   running games
   SCREEN    layout & frame    PANELS    right hand panel GAMES    games data
   MENU      horizontal menu   LAUNCH    launch commands  CONFIG   SETTINGS.TXT
-  THEMES    colour themes
+  THEMES    colour themes     FORMS     edit game, pick from list
 ------------------------------}
 uses
     Dos,
@@ -23,6 +23,8 @@ uses
     Runner,
     Config,
     Themes,
+    Forms,
+    Objects,
     { Launch external executable - Must keep ExecSwap last.
       Turbo Pascal uses EXECSWAP.TPU, Free Pascal uses EXECSWAP\FPC\EXECSWAP.PAS }
     ExecSwap;
@@ -129,6 +131,99 @@ begin
   scrollTo(0);
   for i := 0 to ViewCount - 1 do
     if ( PStr(ViewGame(i)^.Path) = highlightedPath ) then scrollTo(i);
+
+  RedrawAll;
+end;
+
+{ Highlight a game, clearing the filter if it hides it }
+procedure ShowGame(game:PGame);
+begin
+  if ( IndexInView(game) < 0 ) then ApplyFilter('');
+  scrollTo(IndexInView(game));
+end;
+
+{ Edit the highlighted game's details, saving them to its info file }
+procedure EditHighlightedGame;
+var
+  game:PGame;
+begin
+  game := HighlightedGame;
+  if ( game = nil ) then exit;
+
+  if EditGameForm(game, 'Edit ' + PStr(game^.Name)) then begin
+    if not SaveInfoFile(game, InfoFileName) then
+      ShowMessage('Unable to save ' + PStr(game^.Path) + InfoFileName);
+    SortGames(CurrentSort);
+    ShowGame(game);
+    SaveCache;
+  end;
+
+  RedrawAll;
+end;
+
+{ Add a game from a directory with a program in but no info file }
+procedure AddNewGame;
+var
+  dirs:PStringCollection;
+  index:integer;
+  dir:string;
+  game:PGame;
+begin
+  ShowStatus('Looking for games in ' + ScanPath + ' that aren''t listed...');
+  dirs := New(PStringCollection, Init(20, 20));
+  FindUnlistedDirs(ScanPath, InfoFileName, dirs);
+
+  if ( dirs^.Count = 0 ) then
+    ShowMessage('No new games found in ' + ScanPath)
+  else begin
+    index := PickFromList('Add game', 'Choose the directory of the game to add', dirs);
+    if ( index >= 0 ) then begin
+      dir := PString(dirs^.At(index))^;
+
+      { Suggest a name from the directory and the program to run }
+      game := NewGame;
+      game^.Path := NewStr(dir);
+      game^.Name := NewStr(TitleCase(copy(StripTrailingSlash(dir),
+                      length(DirOfPath(StripTrailingSlash(dir))) + 1, 255)));
+      game^.Exec := NewStr(SuggestExec(dir));
+
+      if not EditGameForm(game, 'Add game') then
+        DisposeGame(game)
+      else if not SaveInfoFile(game, InfoFileName) then begin
+        ShowMessage('Unable to save ' + dir + InfoFileName);
+        DisposeGame(game);
+      end
+      else if not AddGame(game) then
+        ShowMessage('Saved, but GameMinder already lists MaxGames games')
+      else begin
+        if ( PlayStatsEnabled ) then LoadPlayStats(game);
+        SortGames(CurrentSort);
+        ShowGame(game);
+        SaveCache;
+      end;
+    end;
+  end;
+
+  Dispose(dirs, Done);
+  RedrawAll;
+end;
+
+{ Remove the highlighted game from GameMinder by deleting its info file }
+procedure RemoveHighlightedGame;
+var
+  game:PGame;
+begin
+  game := HighlightedGame;
+  if ( game = nil ) then exit;
+
+  if Confirm('Remove ' + PStr(game^.Name) + ' from GameMinder? Its files are kept') then begin
+    if DeleteInfoFile(game, InfoFileName) then begin
+      RemoveGame(game);
+      scrollTo(offset);
+      SaveCache;
+    end else
+      ShowMessage('Unable to delete ' + PStr(game^.Path) + InfoFileName);
+  end;
 
   RedrawAll;
 end;
@@ -358,6 +453,8 @@ begin
              #81 : scrollTo(offset + PageSize); { Page down - jump down a page }
              #71 : scrollTo(0); { Home - jump to top }
              #79 : scrollTo(ViewCount - 1); { End - jump to bottom }
+             #82 : AddNewGame; { Insert }
+             #83 : RemoveHighlightedGame; { Delete }
 
             {(( Horizonal menu ))}
             #75 : changeHorizonalMenu(-1); { Left }
@@ -387,6 +484,9 @@ begin
               maRun: ExecuteGame;
               maSortMenu: showMenu(MenuSort, ord(CurrentSort));
               maFilterMenu: showMenu(MenuFilter, 0);
+              maAdd: AddNewGame;
+              maEdit: EditHighlightedGame;
+              maDelete: RemoveHighlightedGame;
               maRescan: RescanGames;
               maTheme: NextTheme;
               maExit: runMainLoop := false; { Exit GameMinder }
