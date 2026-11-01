@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.4.0] - Unreleased
+
+### Added
+- Colour themes, defined one per line in `THEMES.TXT` next to `GAMEMIND.EXE`. Choose one with **Theme** in the menu - the choice is remembered in `SETTINGS.TXT`
+- Seven themes to start with: Classic, Turbo, Commander, Mono, Amber, Phosphor and Hot Dog Stand
+
 ## [0.3.0] - 2026-11-01
 
 ### Added
@@ -92,6 +98,7 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.4.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.4.0
 [0.3.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.3.0
 [0.2.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.1
 [0.2.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.2.0

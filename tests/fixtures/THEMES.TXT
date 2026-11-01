@@ -1,0 +1,6 @@
+; Test themes
+Classic: Background=Blue Text=White
+
+Green Screen: background=black TEXT=LightGreen highlightback=2 Bogus=Red Frame=NotAColour
+not a theme
+Empty:

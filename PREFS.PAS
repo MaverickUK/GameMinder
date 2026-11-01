@@ -44,6 +44,7 @@ var
   EnablePlayStats:boolean;
   WaitForKeyAfterGame:boolean;
   CacheGames:boolean;
+  ThemeSetting:string[20]; { Theme from THEMES.TXT, blank to use the Color settings }
   DefaultSort:TSortMode;
   DefaultView:byte;
 
@@ -98,6 +99,7 @@ begin
   EnablePlayStats := GetConfigBool('EnablePlayStats', true);
   WaitForKeyAfterGame := GetConfigBool('WaitForKeyAfterGame', false);
   CacheGames := GetConfigBool('CacheGames', true);
+  ThemeSetting := GetConfigString('Theme', '');
   DefaultSort := ParseSortMode(GetConfigString('DefaultSort', ''), smName);
   DefaultView := ParseView(GetConfigString('DefaultView', ''), ModeInfo);
   MaxGames := GetConfigInt('MaxGames', DefaultMaxGames);

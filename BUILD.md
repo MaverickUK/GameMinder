@@ -22,10 +22,11 @@ Both use ExecSwap (TurboPower Software) to launch games: GameMinder swaps itself
 | `RUNNER.PAS` | Running games: swapping, before/after commands, memory check, play stats |
 | `GAMES.PAS` | Games data: info files, play logs, cache, sorting, filtering |
 | `LAUNCH.PAS` | Working out the command to run a game |
-| `CONFIG.PAS` | Reading `SETTINGS.TXT` |
+| `CONFIG.PAS` | Reading and updating `SETTINGS.TXT` |
+| `THEMES.PAS` | Colour themes from `THEMES.TXT` |
 | `UTILITY.PAS` | Strings, paths, dates |
 
-`GAMES`, `LAUNCH`, `CONFIG`, `PREFS` and `UTILITY` don't use the screen, so they're unit tested on any OS.
+`GAMES`, `LAUNCH`, `CONFIG`, `PREFS`, `THEMES` and `UTILITY` don't use the screen, so they're unit tested on any OS.
 
 ## Turbo Pascal 7
 

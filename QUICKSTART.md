@@ -83,6 +83,25 @@ Each time you run a game, GameMinder records when you played it and for how long
 
 To turn this off, set `EnablePlayStats:false`.
 
+## Themes
+
+Choose **Theme** in the menu and press Enter to switch to the next theme. GameMinder remembers your choice in `SETTINGS.TXT`.
+
+Themes are in `THEMES.TXT`, next to `GAMEMIND.EXE`, one per line - a name, a colon, then the colour of each part of the screen:
+
+```
+Turbo: Background=Blue Text=Yellow Frame=LightGray HeadingText=White HeadingBack=Cyan HighlightText=Black HighlightBack=Green MenuText=White MenuHighlightText=Black MenuHighlightBack=Green
+```
+
+| Element | |
+|---|---|
+| `Background`, `Text`, `Frame` | Main screen |
+| `HeadingText`, `HeadingBack` | Column and panel headings |
+| `HighlightText`, `HighlightBack` | Highlighted game |
+| `MenuText`, `MenuHighlightText`, `MenuHighlightBack` | Menu across the top |
+
+Colours are names (Black, Blue, Green, Cyan, Red, Magenta, Brown, LightGray, DarkGray, LightBlue, LightGreen, LightCyan, LightRed, LightMagenta, Yellow, White) or numbers 0-15. Backgrounds can only be the first eight, Black to LightGray. Anything a theme leaves out uses the Classic colours, so add your own themes by adding a line.
+
 ## SETTINGS.TXT
 
 All configurable options are in this file, with a comment explaining each one, so please have a poke and play. Highlights:
@@ -95,7 +114,8 @@ All configurable options are in this file, with a comment explaining each one, s
 | `DefaultSort` | Sort order on startup: `Name`, `Developer`, `Year`, `Genre`, `Type`, `TimesPlayed` or `TimePlayed` |
 | `DefaultView` | Right hand panel on startup: `Help`, `Info`, `Status` or `Full` |
 | `WaitForKeyAfterGame` | Pause after a game exits, to read any messages it left |
-| `Color...` | Colour theme |
+| `Theme` | Theme from `THEMES.TXT`, set by the Theme menu option |
+| `Color...` | Individual colours, used when `Theme` is blank |
 
 If `SETTINGS.TXT` is missing, GameMinder uses the defaults. It must be in the same directory as `GAMEMIND.EXE`.
 

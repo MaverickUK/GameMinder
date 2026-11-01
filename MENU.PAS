@@ -20,7 +20,7 @@ const
 
 type
   { What a horizontal menu option does when Enter is pressed }
-  TMenuAction = (maRun, maFilterMenu, maSortMenu, maAdd, maEdit, maDelete, maRescan, maExit,
+  TMenuAction = (maRun, maFilterMenu, maSortMenu, maAdd, maEdit, maDelete, maRescan, maTheme, maExit,
                  maSortName, maSortDeveloper, maSortYear, maSortGenre, maSortType,
                  maSortTimesPlayed, maSortTimePlayed,
                  maFilterType, maFilterClear);
@@ -46,10 +46,11 @@ uses
     Crt,
     Utility,
     Prefs,
-    Screen;
+    Screen,
+    Themes;
 
 const
-  PrimaryMenu: array[0..7] of TMenuItem = (
+  PrimaryMenu: array[0..8] of TMenuItem = (
     (Caption:'Run'; Hint:'Run highlighted game'; Action:maRun),
     (Caption:'Filter'; Hint:'Filter games by name or type - or just start typing'; Action:maFilterMenu),
     (Caption:'Sort'; Hint:'Name, Developer, Year, Genre, Type, Played, Playtime'; Action:maSortMenu),
@@ -57,6 +58,7 @@ const
     (Caption:'Edit'; Hint:'Not yet implemented: Edit game in GameMinder'; Action:maEdit),
     (Caption:'Delete'; Hint:'Not yet implemented: Delete game from GameMinder'; Action:maDelete),
     (Caption:'Rescan'; Hint:'Scan for games again, to pick up new or changed games'; Action:maRescan),
+    (Caption:'Theme'; Hint:''; Action:maTheme), { Hint shows the current theme }
     (Caption:'Exit'; Hint:'Exit to DOS'; Action:maExit));
 
   { Same order as TSortMode, so the current sort can be highlighted }
@@ -79,7 +81,7 @@ begin
     MenuSort: MenuCount := 7;
     MenuFilter: MenuCount := 2;
   else
-    MenuCount := 8;
+    MenuCount := 9;
   end;
 end;
 
@@ -129,6 +131,14 @@ begin
 
   { Secondary nav - describe highlighted option }
   GetMenuItem(hMenu, hIndex, item);
+  if ( item.Action = maTheme ) then begin
+    if ( ThemeCount = 0 ) then
+      item.Hint := 'No themes found - add them to ' + ThemesFileName
+    else if ( CurrentTheme = 0 ) then
+      item.Hint := 'Using Color settings - Enter to choose a theme'
+    else
+      item.Hint := 'Theme: ' + ThemeName(CurrentTheme) + ' - Enter for the next theme';
+  end;
   gotoxy(1,2);
   write(PadRight(item.Hint, columns));
 

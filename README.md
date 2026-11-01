@@ -23,7 +23,7 @@ GameMinder also keeps track on when you've played a specific game and for how lo
 ## :rocket: [Quick start](QUICKSTART.md)
 
 1. Download the latest zip from [Releases](https://github.com/MaverickUK/GameMinder/releases) and copy `GAMEMIND.EXE` and `SETTINGS.TXT` to your DOS machine
-2. Set `ScanPath` in `SETTINGS.TXT` to your games directory
+2. Copy `THEMES.TXT` too if you'd like colour themes, then set `ScanPath` in `SETTINGS.TXT` to your games directory
 3. Add a `!GM_INFO.TXT` file to each game's directory, e.g. `name:Commander Keen 1` and `exec:keen1.exe`
 4. Run `GAMEMIND`
 
