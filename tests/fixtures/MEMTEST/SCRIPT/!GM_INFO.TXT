@@ -1,0 +1,6 @@
+; Used by CI to check before:/after: commands and the memory warning
+name:Script Test
+exec:C:\MEMFREE.EXE C:\VIASCRPT.TXT
+before:echo before > C:\BEFORE.TXT
+after:echo after > C:\AFTER.TXT
+memory:1000

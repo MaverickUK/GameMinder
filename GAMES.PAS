@@ -23,7 +23,7 @@ const
 
 type
   { Games sorting modes }
-  TSortMode = (smName, smDeveloper, smYear, smGenre, smTimesPlayed, smTimePlayed);
+  TSortMode = (smName, smDeveloper, smYear, smGenre, smType, smTimesPlayed, smTimePlayed);
 
   { Individual game record - strings held on heap, nil when blank }
   PGame = ^TGame;
@@ -36,6 +36,10 @@ type
     Genre: PString;     { Platform }
     Video: PString;     { EGA }
     Sound: PString;     { Sound Blaster }
+    GameType: PString;  { Full, Demo, Shareware, Freeware... }
+    MemoryKB: word;     { Conventional memory needed, 0 if not known }
+    Before: PString;    { Command run before the game e.g. MOUSE.COM }
+    After: PString;     { Command run after the game e.g. MOUSE OFF }
     { Play stats }
     LastPlayed: PString; { yyyy/mm/dd HH:MM }
     TimesPlayed: word;
@@ -76,6 +80,9 @@ procedure LoadPlayStats(game:PGame);
 function AppendPlayLog(game:PGame; line:string):boolean;
 function AddGame(game:PGame):boolean;
 procedure ScanForInfoFiles(path:string; infoFileName:string);
+{ Cache }
+function SaveGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
+function LoadGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
 { Sorting & filtering }
 function CompareGames(a,b:PGame; mode:TSortMode):integer;
 procedure SortGames(mode:TSortMode);
@@ -102,6 +109,9 @@ begin
   DisposeStr(game^.Genre);
   DisposeStr(game^.Video);
   DisposeStr(game^.Sound);
+  DisposeStr(game^.GameType);
+  DisposeStr(game^.Before);
+  DisposeStr(game^.After);
   DisposeStr(game^.LastPlayed);
   Dispose(game);
 end;
@@ -182,7 +192,11 @@ begin
   else if ( key = 'YEAR' ) then ReplaceStr(game^.Year, value)
   else if ( key = 'GENRE' ) then ReplaceStr(game^.Genre, value)
   else if ( key = 'VIDEO' ) then ReplaceStr(game^.Video, value)
-  else if ( key = 'SOUND' ) then ReplaceStr(game^.Sound, value);
+  else if ( key = 'SOUND' ) then ReplaceStr(game^.Sound, value)
+  else if ( key = 'TYPE' ) then ReplaceStr(game^.GameType, value)
+  else if ( key = 'MEMORY' ) then game^.MemoryKB := ParseMemoryKB(value)
+  else if ( key = 'BEFORE' ) then ReplaceStr(game^.Before, value)
+  else if ( key = 'AFTER' ) then ReplaceStr(game^.After, value);
 end;
 
 { Apply a single line from a !GM_LOG.TXT file to a game's stats }
@@ -337,6 +351,123 @@ begin
   {$ENDIF}
 end;
 
+{ ////////////////// Cache ////////////////// }
+
+const
+  CacheVersion = '1';
+
+{ Save all games, including play stats, so the next startup doesn't need to scan }
+function SaveGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
+var
+  f:Text;
+  i:integer;
+  game:PGame;
+
+  procedure WriteField(key:string; value:PString);
+  begin
+    if ( value <> nil ) then writeln(f, key, ':', value^);
+  end;
+
+begin
+  SaveGameCache := false;
+
+  Assign(f, fileName);
+  {$I-}
+  Rewrite(f);
+  {$I+}
+  if ( IOResult <> 0 ) then begin
+    VerboseWriteln('Unable to write game cache ' + fileName);
+    exit;
+  end;
+
+  {$I-}
+  writeln(f, '; GameMinder game cache - delete this file or use Rescan to rebuild it');
+  writeln(f, 'cache:', CacheVersion);
+  writeln(f, 'scanpath:', UpStr(NormalizeDir(scanPath)));
+  writeln(f, 'infofile:', UpStr(infoFileName));
+
+  for i := 0 to GameList^.Count - 1 do begin
+    game := GameList^.At(i);
+    writeln(f);
+    WriteField('path', game^.Path);
+    WriteField('name', game^.Name);
+    WriteField('exec', game^.Exec);
+    WriteField('developer', game^.Developer);
+    WriteField('year', game^.Year);
+    WriteField('genre', game^.Genre);
+    WriteField('video', game^.Video);
+    WriteField('sound', game^.Sound);
+    WriteField('type', game^.GameType);
+    if ( game^.MemoryKB > 0 ) then writeln(f, 'memory:', game^.MemoryKB);
+    WriteField('before', game^.Before);
+    WriteField('after', game^.After);
+    WriteField('lastplayed', game^.LastPlayed);
+    if ( game^.TimesPlayed > 0 ) then writeln(f, 'timesplayed:', game^.TimesPlayed);
+    if ( game^.MinutesPlayed > 0 ) then writeln(f, 'minutesplayed:', game^.MinutesPlayed);
+  end;
+
+  Close(f);
+  {$I+}
+  SaveGameCache := ( IOResult = 0 );
+end;
+
+{ Load games from a cache made by SaveGameCache. Returns false, leaving the list empty,
+  if there's no cache or it was made for a different ScanPath or InfoFileName }
+function LoadGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
+var
+  f:Text;
+  line,key,value:string;
+  game:PGame;
+  valid:boolean;
+  code:integer;
+begin
+  LoadGameCache := false;
+
+  Assign(f, fileName);
+  {$I-}
+  Reset(f);
+  {$I+}
+  if ( IOResult <> 0 ) then exit;
+
+  valid := false;
+  game := nil;
+
+  while not Eof(f) do begin
+    readln(f, line);
+    if SplitKeyValue(line, key, value) then begin
+      if ( game = nil ) and ( key <> 'PATH' ) then begin
+        { Header }
+        if ( key = 'CACHE' ) then valid := ( value = CacheVersion )
+        else if ( key = 'SCANPATH' ) then valid := valid and ( value = UpStr(NormalizeDir(scanPath)) )
+        else if ( key = 'INFOFILE' ) then valid := valid and ( value = UpStr(infoFileName) );
+      end
+      else if not valid then
+        break
+      else if ( key = 'PATH' ) then begin
+        if ( game <> nil ) then AddGame(game);
+        game := NewGame;
+        game^.Path := NewStr(value);
+      end
+      else if ( key = 'LASTPLAYED' ) then ReplaceStr(game^.LastPlayed, value)
+      else if ( key = 'TIMESPLAYED' ) then val(value, game^.TimesPlayed, code)
+      else if ( key = 'MINUTESPLAYED' ) then val(value, game^.MinutesPlayed, code)
+      else
+        SetGameField(game, key, value);
+    end;
+  end;
+
+  if ( game <> nil ) then begin
+    if ( valid ) then AddGame(game) else DisposeGame(game);
+  end;
+
+  Close(f);
+
+  { Discard anything read before the cache was found to be invalid }
+  if not valid then GameList^.FreeAll;
+
+  LoadGameCache := valid;
+end;
+
 { ////////////////// Sorting & filtering ////////////////// }
 
 { Compare two games for the sort mode, ties broken by name then path }
@@ -348,6 +479,7 @@ begin
     smDeveloper: result_ := CompareText(PStr(a^.Developer), PStr(b^.Developer));
     smYear: result_ := CompareText(PStr(a^.Year), PStr(b^.Year));
     smGenre: result_ := CompareText(PStr(a^.Genre), PStr(b^.Genre));
+    smType: result_ := CompareText(PStr(a^.GameType), PStr(b^.GameType));
     { Most played first }
     smTimesPlayed: result_ := longint(b^.TimesPlayed) - a^.TimesPlayed;
     smTimePlayed: result_ := b^.MinutesPlayed - a^.MinutesPlayed;
@@ -388,7 +520,7 @@ begin
   ApplyFilter(CurrentFilter);
 end;
 
-{ Rebuild the view with games whose name contains the filter text }
+{ Rebuild the view with games whose name or type contains the filter text }
 procedure ApplyFilter(filter:string);
 var
   i:integer;
@@ -399,7 +531,8 @@ begin
 
   for i := 0 to GameList^.Count - 1 do begin
     game := GameList^.At(i);
-    if ContainsText(PStr(game^.Name), CurrentFilter) then begin
+    if ContainsText(PStr(game^.Name), CurrentFilter)
+       or ContainsText(PStr(game^.GameType), CurrentFilter) then begin
       View^[ViewCount] := game;
       inc(ViewCount);
     end;
@@ -435,6 +568,7 @@ begin
     smDeveloper: SortModeName := 'developer';
     smYear: SortModeName := 'year';
     smGenre: SortModeName := 'genre';
+    smType: SortModeName := 'type';
     smTimesPlayed: SortModeName := 'times played';
     smTimePlayed: SortModeName := 'time played';
   end;
@@ -448,6 +582,7 @@ begin
   else if ( name = 'DEVELOPER' ) then ParseSortMode := smDeveloper
   else if ( name = 'YEAR' ) then ParseSortMode := smYear
   else if ( name = 'GENRE' ) then ParseSortMode := smGenre
+  else if ( name = 'TYPE' ) then ParseSortMode := smType
   else if ( name = 'TIMESPLAYED' ) then ParseSortMode := smTimesPlayed
   else if ( name = 'TIMEPLAYED' ) then ParseSortMode := smTimePlayed
   else ParseSortMode := default;

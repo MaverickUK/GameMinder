@@ -11,6 +11,7 @@
 ;   doesn't depend on Free Pascal's symbol names
 ; - Path and command line are copied before swapping, rather than after shrinking memory
 ; - EMS/swap file allocation is done in Pascal (EXECSWAP.PAS)
+; - Explains why if memory can't be reclaimed after the program, e.g. a TSR was left loaded
 ;
 ; Assemble with: nasm -f obj -o SWAPCORE.OBJ SWAPCORE.ASM
 ;
@@ -71,6 +72,9 @@ FilePtr1        dd      0               ;Pointer to FCB file
 FilePtr2        dd      0               ;Pointer to FCB file
 TempStack       times StkSize db 0      ;Temporary stack
 StackTop:                               ;Initial top of stack
+NoRestoreMsg    db      13,10,'GameMinder could not get its memory back - a program left loaded',13,10
+                db      'in memory (such as a TSR started by a before: command) is using it.',13,10
+                db      'Unload it in an after: command, or load it before starting GameMinder.',13,10,'$'
 
 ;-----------------------------------------------------------------------------
 ;Macros
@@ -313,6 +317,11 @@ EX3:    mov     [cs:Status], ax         ;Save DOS error code
         mov     ah, 4Ah                 ;SetBlock
         int     21h
         jnc     EX4                     ;Jump if no error
+        push    cs
+        pop     ds
+        mov     dx, NoRestoreMsg        ;Explain why before halting
+        mov     ah, 09h
+        int     21h
         HaltWithError 0FFh              ;Must halt if failure here
 EX4:    InitSwapCount                   ;Initialize LeftToSwap
 

@@ -11,14 +11,21 @@ InfoFileName:!GM_INFO.TXT
 ; Maximum number of games to load (up to 16000)
 MaxGames:1000
 
-; Startup sort order: Name, Developer, Year, Genre, TimesPlayed, TimePlayed
+; Remember the games found in GMCACHE.TXT, so startup doesn't need to scan.
+; Use Rescan in the menu, or GAMEMIND /SCAN, to pick up new or changed games
+CacheGames:true
+
+; Startup sort order: Name, Developer, Year, Genre, Type, TimesPlayed, TimePlayed
 DefaultSort:Name
 
 ; Startup right hand panel: Help, Info, Status, Full
 DefaultView:Info
 
-; Screen row (5-23) the highlighted game is shown on
-HighlightedRow:14
+; Screen lines: 25, or 50 for more games on screen (43 on EGA, 50 on VGA)
+ScreenLines:25
+
+; Screen row the highlighted game is shown on, 0 = middle of the list
+HighlightedRow:0
 
 ; Text shown on rows with no game e.g. -----
 BlankLineFilter:

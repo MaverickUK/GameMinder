@@ -34,6 +34,7 @@ function DayNumber(year,month,day:word):longint;
 function ElapsedMinutes(startDay:longint; startMinute:word; endDay:longint; endMinute:word):longint;
 function FormatBytes(bytes:longint):string;
 function DosErrorText(code:word):string;
+function ParseMemoryKB(value:string):word;
 { Strings }
 function PadRight(s:string; width:byte):string;
 function PadColumn(s:string; width:byte):string;
@@ -208,6 +209,25 @@ begin
   else
     DosErrorText := 'DOS error ' + ConvertToString(code);
   end;
+end;
+
+{ Memory in KB from a value like 580, 580K or 580KB, 0 if not valid }
+function ParseMemoryKB(value:string):word;
+var
+  kb:longint;
+  code:integer;
+begin
+  value := UpStr(Trim(value));
+  if ( copy(value, length(value) - 1, 2) = 'KB' ) then
+    value := Trim(copy(value, 1, length(value) - 2))
+  else if ( copy(value, length(value), 1) = 'K' ) then
+    value := Trim(copy(value, 1, length(value) - 1));
+
+  val(value, kb, code);
+  if ( code = 0 ) and ( kb > 0 ) and ( kb <= 1024 ) then
+    ParseMemoryKB := kb
+  else
+    ParseMemoryKB := 0;
 end;
 
 { ////////////////// Strings ////////////////// }
