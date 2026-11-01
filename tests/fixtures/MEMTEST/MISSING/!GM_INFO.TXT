@@ -1,0 +1,3 @@
+; Used by CI - a game whose program is missing mustn't be counted as played
+name:Missing Game
+exec:NOSUCH.EXE

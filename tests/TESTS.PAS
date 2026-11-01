@@ -535,6 +535,9 @@ begin
   BuildLaunchCommand('C:\GAMES\X\', 'D:\TOOLS\RUN.COM', '', prog, args);
   CheckStr('Launch full path exec', 'D:\TOOLS\RUN.COM', prog);
 
+  CheckStr('GameProgram', 'C:\GAMES\DOOM\DOOM.EXE', GameProgram('C:\GAMES\DOOM\', 'DOOM.EXE -nomonsters'));
+  CheckStr('GameProgram batch file', 'C:\GAMES\DUNE\dune.bat', GameProgram('C:\GAMES\DUNE\', 'dune.bat'));
+  CheckStr('GameProgram full path', 'D:\TOOLS\RUN.COM', GameProgram('C:\GAMES\X\', 'D:\TOOLS\RUN.COM /X'));
   CheckBool('NeedsLaunchScript none', false, NeedsLaunchScript('', ' '));
   CheckBool('NeedsLaunchScript before', true, NeedsLaunchScript('MOUSE', ''));
   CheckBool('NeedsLaunchScript after', true, NeedsLaunchScript('', 'MOUSE OFF'));

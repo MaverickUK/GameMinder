@@ -137,7 +137,7 @@ jobs:
           dos "MEMFREE.EXE C:\\BASE.TXT"
           dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNEMS.TXT" "ren VIAGM.TXT VIAEMS.TXT"
           dos "copy SETDISK.TXT SETTINGS.TXT" "GAMEMIND.EXE /RUN memory > RUNDISK.TXT" "ren VIAGM.TXT VIADISK.TXT"
-          dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /SCAN /RUN script > RUNSCRPT.TXT"
+          dos "copy SETEMS.TXT SETTINGS.TXT" "GAMEMIND.EXE /SCAN /RUN script > RUNSCRPT.TXT" "GAMEMIND.EXE /RUN missing > RUNMISS.TXT"
 
           # Everything again in one session, as a user would, checking GameMinder returns to DOS each time
           dos "GAMEMIND.EXE /LIST > NUL" "TESTS.EXE D:\\ > NUL" "MEMFREE.EXE C:\\NUL.TXT" \
@@ -148,7 +148,7 @@ jobs:
         if: always()
         run: |
           cd build/dos
-          for f in VER LIST LIST2 TESTS BASE RUNEMS VIAEMS RUNDISK VIADISK RUNSCRPT VIASCRPT BEFORE AFTER SESSION; do
+          for f in VER LIST LIST2 TESTS BASE RUNEMS VIAEMS RUNDISK VIADISK RUNSCRPT VIASCRPT BEFORE AFTER RUNMISS SESSION; do
             echo "--- $f.TXT"; cat "$f.TXT" 2>/dev/null || echo "(missing)"
           done
           echo "--- !GM_LOG.TXT"; cat '../../tests/fixtures/MEMTEST/MEMFREE/!GM_LOG.TXT' 2>/dev/null || echo "(missing)"
@@ -192,6 +192,11 @@ jobs:
           grep -q "needs 1000KB" RUNSCRPT.TXT
           # COMMAND.COM runs the before/after commands, so allow a little more
           [ $((base - script)) -le 16 ]
+
+      - name: Check a missing game isn't counted as played
+        run: |
+          grep -q "File not found" build/dos/RUNMISS.TXT
+          [ ! -f 'tests/fixtures/MEMTEST/MISSING/!GM_LOG.TXT' ]
 
   package:
     name: Package release zip
