@@ -58,11 +58,17 @@ jobs:
 
       - name: Build GAMEMIND.EXE and TESTS.EXE
         run: |
-          FPCLIB="$HOME/fpc-msdos/lib/fpc/${FPC_VERSION}"
+          # Locate the installed cross compiler and msdos units
+          PPC=$(find "$HOME/fpc-msdos" -name ppcross8086 -type f | head -1)
+          SYSTEM_PPU=$(find "$HOME/fpc-msdos" -path '*msdos*' -name system.ppu | head -1)
+          UNITS=$(dirname "$(dirname "$SYSTEM_PPU")")
+          echo "Compiler: $PPC"
+          echo "Units:    $UNITS"
+          ls "$UNITS"
           mkdir -p build/dos
           build() {
-            "$FPCLIB/ppcross8086" -Tmsdos -WmLarge -Mtp -O2 \
-              -Fu. -Fu"$FPCLIB/units/i8086-msdos/*" \
+            "$PPC" -Tmsdos -WmLarge -Mtp -O2 \
+              -Fu. -Fu"$UNITS/*" \
               -FUbuild/dos -o"$2" "$1"
           }
           build GAMEMIND.PAS build/dos/GAMEMIND.EXE
