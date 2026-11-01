@@ -14,5 +14,5 @@ Turbo: Background=Blue Text=Yellow Frame=LightGray HeadingText=White HeadingBack
 Commander: Background=Blue Text=LightCyan Frame=LightCyan HeadingText=Yellow HeadingBack=Blue HighlightText=Black HighlightBack=Cyan MenuText=White MenuHighlightText=Black MenuHighlightBack=Cyan
 Mono: Background=Black Text=LightGray Frame=LightGray HeadingText=Black HeadingBack=LightGray HighlightText=Black HighlightBack=LightGray MenuText=LightGray MenuHighlightText=Black MenuHighlightBack=LightGray
 Amber: Background=Black Text=Brown Frame=Brown HeadingText=Black HeadingBack=Brown HighlightText=Yellow HighlightBack=Red MenuText=Brown MenuHighlightText=Black MenuHighlightBack=Brown
-Phosphor: Background=Black Text=Green Frame=Green HeadingText=Black HeadingBack=Green HighlightText=LightGreen HighlightBack=Black MenuText=Green MenuHighlightText=Black MenuHighlightBack=Green
+Phosphor: Background=Black Text=Green Frame=Green HeadingText=LightGreen HeadingBack=Black HighlightText=Black HighlightBack=Green MenuText=Green MenuHighlightText=Black MenuHighlightBack=Green
 Hot Dog Stand: Background=Red Text=Yellow Frame=Yellow HeadingText=Black HeadingBack=Brown HighlightText=Red HighlightBack=LightGray MenuText=Yellow MenuHighlightText=Red MenuHighlightBack=LightGray
