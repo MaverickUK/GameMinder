@@ -24,6 +24,7 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 - ExecSwap v1.3 source (in `EXECSWAP/`) alongside the prebuilt unit
 - [QUICKSTART.md](QUICKSTART.md) guide, also included in the release zip
 - [ROADMAP.md](ROADMAP.md), replacing the wiki roadmap
+- Demo video in the README, recorded in DOSBox-X by `scripts/record-demo.sh`
 
 ### Changed
 - Esc now exits straight away from the main menu (clears the filter or leaves a sub-menu first)

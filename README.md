@@ -4,7 +4,9 @@
 [![CI](https://github.com/MaverickUK/GameMinder/actions/workflows/ci.yml/badge.svg)](https://github.com/MaverickUK/GameMinder/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/MaverickUK/GameMinder?include_prereleases&sort=semver)](https://github.com/MaverickUK/GameMinder/releases)
 
-[![GameMinder UI](GameMinder_v0-1-0.jpg)](https://www.youtube.com/playlist?list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw)
+[![GameMinder demo: browsing, sorting, filtering and launching games](docs/gameminder-demo.gif)](docs/gameminder-demo.mp4)
+
+*GameMinder v0.2.0 in DOSBox-X: help, system status, full screen view, sorting, type-to-filter, and launching a game from a batch file, with play stats updated on return. [Watch as MP4](docs/gameminder-demo.mp4).*
 
 [Watch demo of GameMinder running on a 386 on YouTube](https://www.youtube.com/watch?v=UGUtVTo1mUQ&list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw&index=7)
 

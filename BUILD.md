@@ -58,6 +58,17 @@ TESTS\TESTS TESTS\FIXTURES\
 
 CI also runs `TESTS.EXE` and `GAMEMIND /LIST` in DOSBox against the games in [tests/fixtures](tests/fixtures).
 
+## Demo video
+
+The README demo is recorded in DOSBox-X from a scripted set of key presses. Nothing is shown on screen while it records. To re-record it with a new build (needs `dosbox-x` and `ffmpeg`):
+
+```
+gh run download <run-id> -n gamemind-dos -D build/dos
+scripts/record-demo.sh build/dos/GAMEMIND.EXE
+```
+
+This writes `docs/gameminder-demo.gif` and `docs/gameminder-demo.mp4`. The key sequence is in the script.
+
 ## Releasing
 
 GameMinder uses [Semantic Versioning](https://semver.org). While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.

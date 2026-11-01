@@ -9,6 +9,8 @@
 *.[Tt][Pp][Uu] binary
 *.[Ee][Xx][Ee] binary
 *.jpg binary
+*.gif binary
+*.mp4 binary
 
 *.sh text eol=lf
 *.yml text eol=lf
