@@ -779,28 +779,6 @@ begin
   SortGames(smName);
 end;
 
-{ DEBUG: append the DOS memory control block chain to C:\MCB.TXT }
-procedure DumpMCBs(title:string);
-var
-  regs:Registers;
-  mcb:word;
-  f:Text;
-  i:integer;
-begin
-  Assign(f, 'C:\MCB.TXT');
-  {$I-} Append(f); if IOResult <> 0 then Rewrite(f); {$I+}
-  regs.AH := $62; MsDos(regs);
-  writeln(f, '== ', title, ' PrefixSeg=', PrefixSeg, ' CurrentPSP=', regs.BX);
-  regs.AH := $52; MsDos(regs);
-  mcb := MemW[regs.ES:regs.BX - 2];
-  for i := 1 to 40 do begin
-    writeln(f, '  MCB ', mcb, ' type=', chr(Mem[mcb:0]), ' owner=', MemW[mcb:1], ' paras=', MemW[mcb:3]);
-    if ( chr(Mem[mcb:0]) <> 'M' ) then break;
-    mcb := mcb + MemW[mcb:3] + 1;
-  end;
-  Close(f);
-end;
-
 { /RUN - run a game by name without the UI, exit code is non-zero if it couldn't be run }
 procedure RunGame;
 var
@@ -815,11 +793,8 @@ begin
     Halt(1);
   end;
 
-  DumpMCBs('before');
   status := LaunchGame(ViewGame(0), false);
-  DumpMCBs('after');
   DoneGames;
-  DumpMCBs('after DoneGames');
   if ( status <> 0 ) then Halt(2);
 end;
 
