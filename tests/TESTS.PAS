@@ -608,7 +608,7 @@ begin
   CheckBool('FileExists missing', false, FileExists(root + 'NEWGAME' + PathSep + 'NOSUCH.EXE'));
   CheckStr('SuggestExec prefers exe, skips setup', 'NEWGAME.EXE', SuggestExec(root + 'NEWGAME'));
   CheckStr('SuggestExec batch file', 'RUN.BAT', SuggestExec(root + 'BATONLY'));
-  CheckStr('SuggestExec only setup', '', SuggestExec(root + 'SETUPONLY'));
+  CheckStr('SuggestExec only setup', '', SuggestExec(root + 'INSTONLY'));
   CheckStr('SuggestExec no programs', '', SuggestExec(root + 'NOPROG'));
 
   list := New(PStringCollection, Init(10, 10));
@@ -617,8 +617,8 @@ begin
   if ( list^.Count = 4 ) then begin
     CheckStr('FindUnlistedDirs 1', root + 'BATONLY' + PathSep, PString(list^.At(0))^);
     CheckStr('FindUnlistedDirs nested', root + 'GROUP' + PathSep + 'INNER' + PathSep, PString(list^.At(1))^);
-    CheckStr('FindUnlistedDirs 3', root + 'NEWGAME' + PathSep, PString(list^.At(2))^);
-    CheckStr('FindUnlistedDirs setup only', root + 'SETUPONLY' + PathSep, PString(list^.At(3))^);
+    CheckStr('FindUnlistedDirs setup only', root + 'INSTONLY' + PathSep, PString(list^.At(2))^);
+    CheckStr('FindUnlistedDirs 4', root + 'NEWGAME' + PathSep, PString(list^.At(3))^);
   end;
   Dispose(list, Done);
 end;
