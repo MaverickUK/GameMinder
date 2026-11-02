@@ -10,9 +10,12 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 
 ### Added
 - **Add** (or Ins) lists directories under `ScanPath` with a program in but no `!GM_INFO.TXT`, then opens a form to fill in the game's details. The name and program to run are suggested, skipping SETUP and INSTALL programs
-- **Edit** opens a form with all of the highlighted game's details. Saving updates its `!GM_INFO.TXT`, keeping comments and anything GameMinder doesn't use
+- **Edit** opens a form with all of the highlighted game's details. Saving updates its `!GM_INFO.TXT`, keeping comments and anything GameMinder doesn't use. Name and Exec, which are needed, are marked with `*`
 - **Delete** (or Del) removes the highlighted game from GameMinder after asking, by deleting its `!GM_INFO.TXT`. The game's files and play log are kept
 - `scripts/testbed.sh` builds GameMinder with Turbo Pascal 7 in DOSBox-X and runs it on a test drive of games, including edge cases - see [Building & testing](BUILD.md#testbed)
+
+### Changed
+- **Theme** lists all the themes under the menu, like Sort. Left and right try each theme out, Enter keeps it and Esc goes back to the theme you had
 
 ### Fixed
 - Building with Turbo Pascal 7: `EXECSWAP.TPU` was a Turbo Pascal 6 unit ("Error 72: Unit file format error"). It's now the Turbo Pascal 7 unit, which was in `TPU\`

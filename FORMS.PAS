@@ -33,8 +33,9 @@ const
   firstFieldRow = 7;
   listFirstRow = 5;
 
+  { * marks the fields needed to save, see ValidForm }
   FieldLabels: array[1..InfoFieldCount] of string[10] = (
-    'Name', 'Exec', 'Developer', 'Year', 'Genre', 'Type',
+    'Name *', 'Exec *', 'Developer', 'Year', 'Genre', 'Type',
     'Video', 'Sound', 'Memory KB', 'Before', 'After');
 
   FieldHints: array[1..InfoFieldCount] of string[70] = (
@@ -226,6 +227,8 @@ begin
   TextColor(ColorText);
   TextBackground(ColorBackground);
   write('Directory: ', PStr(game^.Path));
+  gotoxy(labelColumn, firstFieldRow + InfoFieldCount + 1);
+  write('* Needed');
 
   current := 1;
   cursor := length(values[1]) + 1;

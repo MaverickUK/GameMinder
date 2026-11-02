@@ -96,7 +96,7 @@ To turn this off, set `EnablePlayStats:false`.
 
 ## Themes
 
-Choose **Theme** in the menu and press Enter to switch to the next theme. GameMinder remembers your choice in `SETTINGS.TXT`.
+Choose **Theme** in the menu and press Enter to list the themes under the menu. Left and right try each one out. Enter keeps the highlighted theme, and GameMinder remembers it in `SETTINGS.TXT`. Esc goes back to the theme you had.
 
 Themes are in `THEMES.TXT`, next to `GAMEMIND.EXE`, one per line - a name, a colon, then the colour of each part of the screen:
 

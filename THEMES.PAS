@@ -37,6 +37,8 @@ function FindTheme(name:string):integer;
 function ThemeName(index:integer):string;
 procedure GetTheme(index:integer; var theme:TTheme);
 procedure ApplyTheme(index:integer);
+procedure GetColors(var theme:TTheme);
+procedure SetColors(var theme:TTheme);
 
 { --------- implementation --------- }
 implementation
@@ -153,13 +155,26 @@ begin
   theme := ThemeList[index];
 end;
 
-{ Use a theme's colours for the screen }
-procedure ApplyTheme(index:integer);
+{ The colours in use, e.g. to put back after previewing themes }
+procedure GetColors(var theme:TTheme);
 begin
-  if ( index < 1 ) or ( index > ThemeCount ) then exit;
-  CurrentTheme := index;
+  theme.Name := '';
+  theme.Colors[teBackground] := ColorBackground;
+  theme.Colors[teText] := ColorText;
+  theme.Colors[teFrame] := ColorFrame;
+  theme.Colors[teHeadingText] := ColorHeadingText;
+  theme.Colors[teHeadingBack] := ColorHeadingBackground;
+  theme.Colors[teHighlightText] := ColorHighlightText;
+  theme.Colors[teHighlightBack] := ColorHighlightBackground;
+  theme.Colors[teMenuText] := ColorHorizontalMenuPrimaryText;
+  theme.Colors[teMenuHighlightText] := ColorHorizonalMenuHighlightText;
+  theme.Colors[teMenuHighlightBack] := ColorHorizonalMenuHighlightBackground;
+end;
 
-  with ThemeList[index] do begin
+{ Use a theme's colours for the screen }
+procedure SetColors(var theme:TTheme);
+begin
+  with theme do begin
     ColorBackground := Colors[teBackground];
     ColorText := Colors[teText];
     ColorFrame := Colors[teFrame];
@@ -171,6 +186,13 @@ begin
     ColorHorizonalMenuHighlightText := Colors[teMenuHighlightText];
     ColorHorizonalMenuHighlightBackground := Colors[teMenuHighlightBack];
   end;
+end;
+
+procedure ApplyTheme(index:integer);
+begin
+  if ( index < 1 ) or ( index > ThemeCount ) then exit;
+  CurrentTheme := index;
+  SetColors(ThemeList[index]);
 end;
 
 begin

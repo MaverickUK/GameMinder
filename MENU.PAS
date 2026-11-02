@@ -14,16 +14,19 @@ const
   MenuPrimary = 0;
   MenuSort = 1;
   MenuFilter = 2;
+  MenuTheme = 3; { Themes from THEMES.TXT, listed on the second row }
   { Position of options in the primary menu, to return to from a sub-menu }
   PrimaryFilterIndex = 1;
   PrimarySortIndex = 2;
+  PrimaryThemeIndex = 7;
 
 type
   { What a horizontal menu option does when Enter is pressed }
   TMenuAction = (maRun, maFilterMenu, maSortMenu, maAdd, maEdit, maDelete, maRescan, maTheme, maExit,
                  maSortName, maSortDeveloper, maSortYear, maSortGenre, maSortType,
                  maSortTimesPlayed, maSortTimePlayed,
-                 maFilterType, maFilterClear);
+                 maFilterType, maFilterClear,
+                 maThemeChoose);
 
   TMenuItem = record
     Caption: string[10];
@@ -80,6 +83,7 @@ begin
   case menu of
     MenuSort: MenuCount := 7;
     MenuFilter: MenuCount := 2;
+    MenuTheme: MenuCount := ThemeCount;
   else
     MenuCount := 9;
   end;
@@ -90,17 +94,77 @@ begin
   case menu of
     MenuSort: item := SortMenu[index];
     MenuFilter: item := FilterMenu[index];
+    MenuTheme: begin { Names are drawn by renderThemeRow }
+      item.Caption := '';
+      item.Hint := '';
+      item.Action := maThemeChoose;
+    end;
   else
     item := PrimaryMenu[index];
+  end;
+end;
+
+procedure setMenuColours(highlighted:boolean);
+begin
+  if highlighted then begin
+    TextColor(ColorHorizonalMenuHighlightText);
+    TextBackground(ColorHorizonalMenuHighlightBackground);
+  end
+  else begin
+    TextColor(ColorHorizontalMenuPrimaryText);
+    TextBackground(ColorBackground);
+  end;
+end;
+
+{ Theme names across the second row, scrolled so the highlighted one is shown }
+procedure renderThemeRow;
+var
+  first,i,width:integer;
+begin
+  gotoxy(1,2);
+  setMenuColours(false);
+  drawBlanks(columns);
+
+  { Width of the themes from first to the highlighted one, with 2 space spacers }
+  first := 0;
+  width := 0;
+  for i := 0 to hIndex do
+    inc(width, length(ThemeName(i + 1)) + 2);
+  while ( width > columns ) and ( first < hIndex ) do begin
+    dec(width, length(ThemeName(first + 1)) + 2);
+    inc(first);
+  end;
+
+  gotoxy(1,2);
+  width := 0;
+  i := first;
+  while ( i < ThemeCount ) and ( width + length(ThemeName(i + 1)) <= columns ) do begin
+    setMenuColours(i = hIndex);
+    write(ThemeName(i + 1));
+    inc(width, length(ThemeName(i + 1)));
+    if ( width + 2 <= columns ) then begin
+      setMenuColours(false);
+      write('  '); { Spacer }
+      inc(width, 2);
+    end;
+    inc(i);
   end;
 end;
 
 { Render the horizonal menu that appears at the top of the scren }
 procedure renderHorizonalMenu;
 var
-  i:byte;
+  i,menu,index:byte;
   item:TMenuItem;
 begin
+  { The theme menu keeps the primary menu on the first row }
+  menu := hMenu;
+  index := hIndex;
+  if ( hMenu = MenuTheme ) then begin
+    menu := MenuPrimary;
+    index := PrimaryThemeIndex;
+  end;
+
   { Clear }
   gotoxy(1,1);
   TextColor(ColorHorizontalMenuPrimaryText);
@@ -110,18 +174,9 @@ begin
   { Primary nav }
   gotoxy(1,1);
 
-  for i := 0 to MenuCount(hMenu) - 1 do begin
-    GetMenuItem(hMenu, i, item);
-
-    if ( i = hIndex ) then begin
-      TextColor(ColorHorizonalMenuHighlightText);
-      TextBackground(ColorHorizonalMenuHighlightBackground);
-    end
-    else begin
-      TextColor(ColorHorizontalMenuPrimaryText);
-      TextBackground(ColorBackground);
-    end;
-
+  for i := 0 to MenuCount(menu) - 1 do begin
+    GetMenuItem(menu, i, item);
+    setMenuColours(i = index);
     write(item.Caption);
 
     TextColor(ColorText);
@@ -129,18 +184,22 @@ begin
     write('  '); { Spacer }
   end;
 
-  { Secondary nav - describe highlighted option }
-  GetMenuItem(hMenu, hIndex, item);
-  if ( item.Action = maTheme ) then begin
-    if ( ThemeCount = 0 ) then
-      item.Hint := 'No themes found - add them to ' + ThemesFileName
-    else if ( CurrentTheme = 0 ) then
-      item.Hint := 'Using Color settings - Enter to choose a theme'
-    else
-      item.Hint := 'Theme: ' + ThemeName(CurrentTheme) + ' - Enter for the next theme';
+  { Secondary nav - describe highlighted option, or list the themes }
+  if ( hMenu = MenuTheme ) then
+    renderThemeRow
+  else begin
+    GetMenuItem(hMenu, hIndex, item);
+    if ( item.Action = maTheme ) then begin
+      if ( ThemeCount = 0 ) then
+        item.Hint := 'No themes found - add them to ' + ThemesFileName
+      else if ( CurrentTheme = 0 ) then
+        item.Hint := 'Using Color settings - Enter to choose a theme'
+      else
+        item.Hint := 'Theme: ' + ThemeName(CurrentTheme) + ' - Enter to choose a theme';
+    end;
+    gotoxy(1,2);
+    write(PadRight(item.Hint, columns));
   end;
-  gotoxy(1,2);
-  write(PadRight(item.Hint, columns));
 
   { Application name }
   gotoxy(columns - length(ApplicationName) + 1, 1);

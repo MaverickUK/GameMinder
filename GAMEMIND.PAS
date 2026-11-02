@@ -228,14 +228,47 @@ begin
   RedrawAll;
 end;
 
-{ Switch to the next theme in THEMES.TXT, remembering it in SETTINGS.TXT }
-procedure NextTheme;
+var
+  ThemeBefore:integer;   { Theme in use before the theme menu was opened }
+  ColorsBefore:TTheme;   { ...and its colours, as it may be the Color settings }
+
+{ Show the highlighted theme while choosing one }
+procedure PreviewTheme;
+begin
+  if ( CurrentTheme = hIndex + 1 ) then exit;
+  ApplyTheme(hIndex + 1);
+  RedrawAll;
+end;
+
+{ List the themes in THEMES.TXT on the second row, to choose with left and right }
+procedure ChooseTheme;
 begin
   if ( ThemeCount = 0 ) then exit;
 
-  ApplyTheme(CurrentTheme mod ThemeCount + 1);
+  ThemeBefore := CurrentTheme;
+  GetColors(ColorsBefore);
+  if ( CurrentTheme > 0 ) then
+    showMenu(MenuTheme, CurrentTheme - 1)
+  else
+    showMenu(MenuTheme, 0);
+  PreviewTheme;
+end;
+
+{ Use the highlighted theme, remembering it in SETTINGS.TXT }
+procedure KeepTheme;
+begin
   ThemeSetting := ThemeName(CurrentTheme);
   SaveConfigValue(ExeDir + SettingsFileName, 'Theme', ThemeSetting);
+  showMenu(MenuPrimary, PrimaryThemeIndex);
+end;
+
+{ Leave the theme menu, going back to the theme in use before }
+procedure CancelTheme;
+begin
+  showMenu(MenuPrimary, PrimaryThemeIndex);
+  if ( CurrentTheme = ThemeBefore ) then exit;
+  CurrentTheme := ThemeBefore;
+  SetColors(ColorsBefore);
   RedrawAll;
 end;
 
@@ -457,8 +490,10 @@ begin
              #83 : RemoveHighlightedGame; { Delete }
 
             {(( Horizonal menu ))}
-            #75 : changeHorizonalMenu(-1); { Left }
-            #77 : changeHorizonalMenu(1); { Right }
+            #75, #77 : begin { Left, Right }
+                if ( ch = #75 ) then changeHorizonalMenu(-1) else changeHorizonalMenu(1);
+                if ( hMenu = MenuTheme ) then PreviewTheme;
+              end;
 
             {(( Mode ))}
              #59 : Mode := ModeHelp; { F1 - Help }
@@ -488,7 +523,7 @@ begin
               maEdit: EditHighlightedGame;
               maDelete: RemoveHighlightedGame;
               maRescan: RescanGames;
-              maTheme: NextTheme;
+              maTheme: ChooseTheme;
               maExit: runMainLoop := false; { Exit GameMinder }
               { --- Sort --- }
               maSortName: SortBy(smName);
@@ -500,6 +535,8 @@ begin
               maSortTimePlayed: SortBy(smTimePlayed);
               { --- Filter --- }
               maFilterClear: SetFilter('');
+              { --- Theme --- }
+              maThemeChoose: KeepTheme;
             end;
         end;
     #27: begin { Esc - clear filter, then go up a menu, then exit }
@@ -509,6 +546,8 @@ begin
           showMenu(MenuPrimary, PrimarySortIndex)
         else if ( hMenu = MenuFilter ) then
           showMenu(MenuPrimary, PrimaryFilterIndex)
+        else if ( hMenu = MenuTheme ) then
+          CancelTheme
         else
           runMainLoop := false;
       end;
