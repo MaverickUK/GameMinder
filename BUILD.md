@@ -87,6 +87,20 @@ CI also runs `TESTS.EXE` and `GAMEMIND /LIST` in DOSBox against the games in [te
 
 It checks how much memory GameMinder leaves for games too: [tests/MEMFREE.PAS](tests/MEMFREE.PAS) records the conventional memory it's given, run from the DOS prompt and through `GAMEMIND /RUN memory`, swapping to EMS and to disk. The build fails if a game gets more than 8KB less than at the DOS prompt.
 
+## Testbed
+
+To try changes by hand, [scripts/testbed.sh](scripts/testbed.sh) builds GameMinder with Turbo Pascal 7 inside DOSBox-X and opens it on a test drive of games (needs `dosbox-x` and Python 3):
+
+```
+scripts/testbed.sh               # build and run
+scripts/testbed.sh --bulk 1000   # with 1,000 more games
+scripts/testbed.sh --exe build/dos/GAMEMIND.EXE   # a Free Pascal build, e.g. from CI
+```
+
+The test drive is created in `build/testbed/c` by [scripts/make-testdata.py](scripts/make-testdata.py): 25 well-known games with play history, plus edge cases in `C:\GAMES\TESTS` (no name, long names, a missing program, no `exec:`, `before:`/`after:`, a memory warning, arguments, an untidy info file, an odd play log, deep nesting, accented names). Every game has a stand-in program that waits for a key, so games can be launched and their play stats recorded.
+
+In DOSBox-X, `S:` is this repository. After editing the source, type `B` to rebuild and run GameMinder, e.g. `B /50`. Each run of the script starts with a fresh test drive; use `--keep` to carry on with the last one. Turbo Pascal is looked for in `C:\TPWDB` - set `TP_DIR` if it's elsewhere. See `scripts/testbed.sh --help` for all the options.
+
 ## Demo video
 
 The README demo is recorded in DOSBox-X from a scripted set of key presses. Nothing is shown on screen while it records. To re-record it with a new build (needs `dosbox-x` and `ffmpeg`):

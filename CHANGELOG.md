@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [Unreleased]
+
+### Added
+- `scripts/testbed.sh` builds GameMinder with Turbo Pascal 7 in DOSBox-X and runs it on a test drive of games, including edge cases - see [Building & testing](BUILD.md#testbed)
+
+### Fixed
+- Building with Turbo Pascal 7: `EXECSWAP.TPU` was a Turbo Pascal 6 unit ("Error 72: Unit file format error"). It's now the Turbo Pascal 7 unit, which was in `TPU\`
+
 ## [0.4.0] - 2026-11-01
 
 ### Added
