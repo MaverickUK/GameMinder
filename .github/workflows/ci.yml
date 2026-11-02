@@ -28,6 +28,12 @@ jobs:
         run: mkdir -p build && fpc -Mtp -Fu. -FUbuild -obuild/tests tests/TESTS.PAS
       - name: Run tests
         run: build/tests
+      - name: Check FpuFix starts first
+        # It must start before Crt, or GameMinder hangs on PCs without an FPU - see FPUFIX.PAS
+        run: |
+          first=$(sed -n '/^uses/{n;p;q}' GAMEMIND.PAS | tr -d ' \r')
+          echo "First unit: $first"
+          [[ "$first" == FpuFix,* ]]
 
   dos-build:
     name: Build for DOS (Free Pascal i8086-msdos)
