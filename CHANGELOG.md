@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
-## [0.5.0] - Unreleased
+## [0.5.0] - 2026-11-02
 
 ### Added
 - **Add** (or Ins) lists directories under `ScanPath` with a program in but no `!GM_INFO.TXT`, then opens a form to fill in the game's details. The name and program to run are suggested, skipping SETUP and INSTALL programs
