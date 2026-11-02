@@ -25,6 +25,7 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~More rows on screen~~ (0.3.0, `GAMEMIND /50`)
 - ~~Warn when a game needs more memory than is free~~ (0.3.0, `memory:`)
 - ~~Colour themes, chosen from the menu~~ (0.4.0, `THEMES.TXT`)
+- ~~Find game directories without an info file~~ (0.5.0, Add)
 - Configure which columns are shown in half and full screen mode, and their widths, in `SETTINGS.TXT`
 - ASCII splash screen on exit
 
@@ -38,7 +39,7 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Automatically load the mouse driver for games that need a mouse~~ (0.3.0, `before:` and `after:` commands)
 - Config option: custom date/time formatting
 - Customise what the function keys (e.g. F5) do in `SETTINGS.TXT`
-- Add, edit and delete games within GameMinder
+- ~~Add, edit and delete games within GameMinder~~ (0.5.0)
 
 ## Later (undecided)
 

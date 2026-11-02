@@ -20,6 +20,11 @@ const
   { Play stats }
   PlayStatsFile_StartMarker = '>'; { Indicate start date/time of game in file }
   PlayStatsFile_MinutesPlayedMarker = '<'; { Indicate minutes played game for }
+  { !GM_INFO.TXT keys, in the order they're written }
+  InfoFieldCount = 11;
+  InfoFieldKeys: array[1..InfoFieldCount] of string[9] = (
+    'NAME', 'EXEC', 'DEVELOPER', 'YEAR', 'GENRE', 'TYPE',
+    'VIDEO', 'SOUND', 'MEMORY', 'BEFORE', 'AFTER');
 
 type
   { Games sorting modes }
@@ -73,6 +78,8 @@ function GameCount:integer;
 { Individual games }
 function PStr(p:PString):string;
 function NewGame:PGame;
+procedure DisposeGame(game:PGame);
+function GameFieldValue(game:PGame; key:string):string;
 procedure SetGameField(game:PGame; key:string; value:string);
 procedure ApplyPlayStatsLine(game:PGame; line:string);
 function LoadInfoFile(path:string; infoFileName:string):PGame;
@@ -80,6 +87,13 @@ procedure LoadPlayStats(game:PGame);
 function AppendPlayLog(game:PGame; line:string):boolean;
 function AddGame(game:PGame):boolean;
 procedure ScanForInfoFiles(path:string; infoFileName:string);
+{ Adding, editing and removing games }
+function SaveInfoFile(game:PGame; infoFileName:string):boolean;
+function DeleteInfoFile(game:PGame; infoFileName:string):boolean;
+procedure RemoveGame(game:PGame);
+function ExecScore(fileName:string):integer;
+function SuggestExec(dir:string):string;
+procedure FindUnlistedDirs(scanPath:string; infoFileName:string; list:PStringCollection);
 { Cache }
 function SaveGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
 function LoadGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
@@ -181,6 +195,25 @@ procedure ReplaceStr(var p:PString; value:string);
 begin
   DisposeStr(p);
   p := NewStr(value);
+end;
+
+{ Value of a !GM_INFO.TXT field - key must be upper case }
+function GameFieldValue(game:PGame; key:string):string;
+begin
+  GameFieldValue := '';
+  if ( key = 'NAME' ) then GameFieldValue := PStr(game^.Name)
+  else if ( key = 'EXEC' ) then GameFieldValue := PStr(game^.Exec)
+  else if ( key = 'DEVELOPER' ) then GameFieldValue := PStr(game^.Developer)
+  else if ( key = 'YEAR' ) then GameFieldValue := PStr(game^.Year)
+  else if ( key = 'GENRE' ) then GameFieldValue := PStr(game^.Genre)
+  else if ( key = 'TYPE' ) then GameFieldValue := PStr(game^.GameType)
+  else if ( key = 'VIDEO' ) then GameFieldValue := PStr(game^.Video)
+  else if ( key = 'SOUND' ) then GameFieldValue := PStr(game^.Sound)
+  else if ( key = 'MEMORY' ) then begin
+    if ( game^.MemoryKB > 0 ) then GameFieldValue := ConvertToString(game^.MemoryKB);
+  end
+  else if ( key = 'BEFORE' ) then GameFieldValue := PStr(game^.Before)
+  else if ( key = 'AFTER' ) then GameFieldValue := PStr(game^.After);
 end;
 
 { Set a game field from a !GM_INFO.TXT key - key must be upper case }
@@ -349,6 +382,199 @@ begin
   {$IFDEF FPC}
   FindClose(S);
   {$ENDIF}
+end;
+
+{ ////////////////// Adding, editing and removing games ////////////////// }
+
+{ Index of an info file key, 0 if GameMinder doesn't use it }
+function InfoFieldIndex(key:string):integer;
+var
+  i:integer;
+begin
+  InfoFieldIndex := 0;
+  for i := 1 to InfoFieldCount do
+    if ( InfoFieldKeys[i] = key ) then InfoFieldIndex := i;
+end;
+
+{ Write a game's details to its info file. Lines GameMinder doesn't use,
+  such as comments, are kept. Returns false if it couldn't be written }
+function SaveInfoFile(game:PGame; infoFileName:string):boolean;
+var
+  source,dest:Text;
+  dir,line,key,value:string;
+  written:array[1..InfoFieldCount] of boolean;
+  i,index:integer;
+  sourceFound:boolean;
+
+  procedure WriteField(index:integer);
+  var
+    fieldValue:string;
+  begin
+    fieldValue := GameFieldValue(game, InfoFieldKeys[index]);
+    if ( length(fieldValue) > 0 ) then
+      writeln(dest, LowerStr(InfoFieldKeys[index]), ':', fieldValue);
+    written[index] := true;
+  end;
+
+begin
+  SaveInfoFile := false;
+  dir := PStr(game^.Path);
+  for i := 1 to InfoFieldCount do written[i] := false;
+
+  Assign(dest, dir + '!GM_INFO.$$$');
+  {$I-}
+  Rewrite(dest);
+  {$I+}
+  if ( IOResult <> 0 ) then exit;
+
+  Assign(source, dir + infoFileName);
+  {$I-}
+  Reset(source);
+  {$I+}
+  sourceFound := ( IOResult = 0 );
+
+  {$I-}
+  if ( sourceFound ) then begin
+    while not Eof(source) do begin
+      readln(source, line);
+      index := 0;
+      if SplitKeyValue(line, key, value) then index := InfoFieldIndex(key);
+
+      if ( index = 0 ) then
+        writeln(dest, line) { Comment or a key GameMinder doesn't use }
+      else if not written[index] then
+        WriteField(index);  { Replace in place, dropping it if now blank }
+    end;
+    Close(source);
+  end;
+
+  for i := 1 to InfoFieldCount do
+    if not written[i] then WriteField(i);
+  Close(dest);
+  {$I+}
+  if ( IOResult <> 0 ) then exit;
+
+  {$I-}
+  if ( sourceFound ) then Erase(source);
+  Rename(dest, dir + infoFileName);
+  {$I+}
+  SaveInfoFile := ( IOResult = 0 );
+end;
+
+{ Delete a game's info file - the game itself and its play log are left alone }
+function DeleteInfoFile(game:PGame; infoFileName:string):boolean;
+var
+  f:Text;
+begin
+  Assign(f, PStr(game^.Path) + infoFileName);
+  {$I-}
+  Erase(f);
+  {$I+}
+  DeleteInfoFile := ( IOResult = 0 );
+end;
+
+{ Remove a game from the list }
+procedure RemoveGame(game:PGame);
+begin
+  GameList^.Free(game);
+  ApplyFilter(CurrentFilter);
+end;
+
+{ How likely a file is to be the program that starts a game:
+  -1 if it isn't a program or is a setup/install program,
+  otherwise 3 for EXE, 2 for BAT, 1 for COM }
+function ExecScore(fileName:string):integer;
+const
+  SetupNames: array[1..10] of string[8] = (
+    'SETUP', 'INSTALL', 'INSTAL', 'UNINST', 'CONFIG', 'SETSOUND', 'SOUND', 'SETMAIN', 'CATALOG', 'ORDER');
+var
+  ext,name:string;
+  i:integer;
+begin
+  ExecScore := -1;
+  fileName := UpStr(fileName);
+  ext := FileExtension(fileName);
+  name := copy(fileName, 1, length(fileName) - length(ext) - 1);
+
+  for i := 1 to 10 do
+    if ( pos(SetupNames[i], name) = 1 ) then exit;
+
+  if ( ext = 'EXE' ) then ExecScore := 3
+  else if ( ext = 'BAT' ) then ExecScore := 2
+  else if ( ext = 'COM' ) then ExecScore := 1;
+end;
+
+{ Best guess at the program that starts the game in a directory, blank if none }
+function SuggestExec(dir:string):string;
+var
+  S:SearchRec;
+  best:string;
+  bestScore,score:integer;
+begin
+  best := '';
+  bestScore := -1;
+
+  FindFirst(NormalizeDir(dir) + AllFilesMask, ReadOnly + Hidden + Archive, S);
+  while ( DosError = 0 ) do begin
+    score := ExecScore(S.Name);
+    if ( score > bestScore ) or ( ( score = bestScore ) and ( score >= 0 ) and ( CompareText(S.Name, best) < 0 ) ) then begin
+      best := S.Name;
+      bestScore := score;
+    end;
+    FindNext(S);
+  end;
+  {$IFDEF FPC}
+  FindClose(S);
+  {$ENDIF}
+
+  if ( bestScore < 0 ) then best := '';
+  SuggestExec := best;
+end;
+
+{ Directories under scanPath with a program in but no info file - games that
+  could be added. Directories inside a game, or inside a found directory, are skipped }
+procedure FindUnlistedDirs(scanPath:string; infoFileName:string; list:PStringCollection);
+
+  procedure Walk(path:string; isRoot:boolean);
+  var
+    S:SearchRec;
+    hasInfo,hasProgram:boolean;
+  begin
+    path := NormalizeDir(path);
+    hasInfo := false;
+    hasProgram := false;
+
+    { Files }
+    FindFirst(path + AllFilesMask, ReadOnly + Hidden + Archive, S);
+    while ( DosError = 0 ) do begin
+      if ( UpStr(S.Name) = UpStr(infoFileName) ) then hasInfo := true
+      else if ( ExecScore(S.Name) >= 0 ) or ( FileExtension(S.Name) = 'EXE' ) then hasProgram := true;
+      FindNext(S);
+    end;
+    {$IFDEF FPC}
+    FindClose(S);
+    {$ENDIF}
+
+    if ( hasInfo ) then exit; { Already a game }
+    if ( hasProgram ) and not isRoot then begin
+      list^.Insert(NewStr(path));
+      exit;
+    end;
+
+    { Sub-directories }
+    FindFirst(path + AllFilesMask, Directory, S);
+    while ( DosError = 0 ) do begin
+      if ( ( S.Attr and Directory ) <> 0 ) and ( S.Name[1] <> '.' ) then
+        Walk(path + S.Name, false);
+      FindNext(S);
+    end;
+    {$IFDEF FPC}
+    FindClose(S);
+    {$ENDIF}
+  end;
+
+begin
+  Walk(scanPath, true);
 end;
 
 { ////////////////// Cache ////////////////// }

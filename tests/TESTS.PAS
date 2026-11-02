@@ -141,6 +141,9 @@ begin
   CheckStr('Trim', 'Keen', Trim('  Keen '#9#13));
   CheckStr('Trim blank', '', Trim('   '));
   CheckStr('UpStr', 'KEEN 4', UpStr('Keen 4'));
+  CheckStr('LowerStr', 'keen 4', LowerStr('KEEN 4'));
+  CheckStr('TitleCase', 'Monkey Island 2', TitleCase('MONKEY ISLAND 2'));
+  CheckStr('TitleCase underscores', 'Doom_Ii', TitleCase('DOOM_II'));
   CheckStr('PadRight pads', 'Doom  ', PadRight('Doom', 6));
   CheckStr('PadRight truncates', 'Monkey', PadRight('Monkey Island', 6));
   CheckStr('PadRight zero', '', PadRight('Doom', 0));
@@ -509,6 +512,117 @@ begin
   DoneGames;
 end;
 
+procedure TestEditGames;
+const
+  Dir = 'TESTGAME';
+var
+  game:PGame;
+  f:Text;
+  line:string;
+  lines:integer;
+  path:string;
+begin
+  path := Dir + PathSep;
+  {$I-} MkDir(Dir); {$I+}
+  if ( IOResult <> 0 ) then ;
+
+  Assign(f, path + '!GM_INFO.TXT');
+  Rewrite(f);
+  writeln(f, '; Keen notes');
+  writeln(f, 'name:Keen');
+  writeln(f, 'rating:5');
+  writeln(f, 'exec:KEEN.EXE');
+  writeln(f, 'genre:Platform');
+  writeln(f, 'name:Duplicate');
+  Close(f);
+
+  game := LoadInfoFile(path, '!GM_INFO.TXT');
+  CheckStr('GameFieldValue', 'KEEN.EXE', GameFieldValue(game, 'EXEC'));
+  CheckStr('GameFieldValue blank memory', '', GameFieldValue(game, 'MEMORY'));
+
+  SetGameField(game, 'NAME', 'Commander Keen');
+  SetGameField(game, 'GENRE', '');
+  SetGameField(game, 'YEAR', '1991');
+  SetGameField(game, 'MEMORY', '520');
+  CheckStr('GameFieldValue memory', '520', GameFieldValue(game, 'MEMORY'));
+  CheckBool('SaveInfoFile', true, SaveInfoFile(game, '!GM_INFO.TXT'));
+
+  Reset(f);
+  lines := 0;
+  while not Eof(f) do begin
+    readln(f, line);
+    inc(lines);
+    case lines of
+      1: CheckStr('SaveInfoFile keeps comment', '; Keen notes', line);
+      2: CheckStr('SaveInfoFile replaces in place', 'name:Commander Keen', line);
+      3: CheckStr('SaveInfoFile keeps unknown key', 'rating:5', line);
+      4: CheckStr('SaveInfoFile keeps exec', 'exec:KEEN.EXE', line);
+      5: CheckStr('SaveInfoFile adds new field', 'year:1991', line);
+      6: CheckStr('SaveInfoFile adds memory', 'memory:520', line);
+    end;
+  end;
+  Close(f);
+  CheckInt('SaveInfoFile drops blank and duplicate fields', 6, lines);
+
+  game := LoadInfoFile(path, '!GM_INFO.TXT');
+  CheckStr('SaveInfoFile round trip', 'Commander Keen', PStr(game^.Name));
+
+  { New game with no info file yet }
+  Erase(f);
+  CheckBool('SaveInfoFile new file', true, SaveInfoFile(game, '!GM_INFO.TXT'));
+  game := LoadInfoFile(path, '!GM_INFO.TXT');
+  CheckStr('SaveInfoFile new file round trip', '1991', PStr(game^.Year));
+
+  CheckBool('DeleteInfoFile', true, DeleteInfoFile(game, '!GM_INFO.TXT'));
+  CheckBool('DeleteInfoFile removed it', true, LoadInfoFile(path, '!GM_INFO.TXT') = nil);
+  CheckBool('DeleteInfoFile missing', false, DeleteInfoFile(game, '!GM_INFO.TXT'));
+  RmDir(Dir);
+
+  { Removing from the list }
+  InitGames(10);
+  AddGame(MakeGame('Doom', '', '', 0, 0));
+  game := MakeGame('Keen', '', '', 0, 0);
+  AddGame(game);
+  AddGame(MakeGame('Dune', '', '', 0, 0));
+  SortGames(smName);
+  RemoveGame(game);
+  CheckInt('RemoveGame count', 2, GameCount);
+  CheckStr('RemoveGame view', 'Doom|Dune', ViewNames);
+  DoneGames;
+end;
+
+procedure TestFindGames;
+var
+  list:PStringCollection;
+  root:string;
+begin
+  CheckInt('ExecScore exe', 3, ExecScore('doom.exe'));
+  CheckInt('ExecScore bat', 2, ExecScore('START.BAT'));
+  CheckInt('ExecScore com', 1, ExecScore('RUN.COM'));
+  CheckInt('ExecScore setup', -1, ExecScore('SETUP.EXE'));
+  CheckInt('ExecScore install', -1, ExecScore('INSTALL.BAT'));
+  CheckInt('ExecScore not a program', -1, ExecScore('README.TXT'));
+
+  root := Fixtures + 'UNLISTED' + PathSep;
+  CheckBool('FileExists', true, FileExists(root + 'NEWGAME' + PathSep + 'START.BAT'));
+  CheckBool('FileExists missing', false, FileExists(root + 'NEWGAME' + PathSep + 'NOSUCH.EXE'));
+  CheckStr('SuggestExec prefers exe, skips setup', 'NEWGAME.EXE', SuggestExec(root + 'NEWGAME'));
+  CheckStr('SuggestExec batch file', 'RUN.BAT', SuggestExec(root + 'BATONLY'));
+  CheckStr('SuggestExec only setup', '', SuggestExec(root + 'INSTONLY'));
+  CheckStr('SuggestExec no programs', '', SuggestExec(root + 'NOPROG'));
+
+  list := New(PStringCollection, Init(10, 10));
+  FindUnlistedDirs(root, '!GM_INFO.TXT', list);
+  CheckInt('FindUnlistedDirs count', 4, list^.Count);
+  if ( list^.Count = 4 ) then begin
+    CheckStr('FindUnlistedDirs 1', root + 'BATONLY' + PathSep, PString(list^.At(0))^);
+    CheckStr('FindUnlistedDirs nested', root + 'GROUP' + PathSep + 'INNER' + PathSep, PString(list^.At(1))^);
+    CheckStr('FindUnlistedDirs setup only', root + 'INSTONLY' + PathSep, PString(list^.At(2))^);
+    CheckStr('FindUnlistedDirs 4', root + 'NEWGAME' + PathSep, PString(list^.At(3))^);
+  end;
+  Dispose(list, Done);
+end;
+
 { ////////////////// Launch ////////////////// }
 
 procedure TestLaunch;
@@ -575,6 +689,8 @@ begin
   TestSortMany;
   TestSortModes;
   TestCache;
+  TestEditGames;
+  TestFindGames;
   TestLaunch;
 
   writeln(Passes, ' passed, ', Failures, ' failed');

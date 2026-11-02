@@ -27,7 +27,7 @@ type
 
   TMenuItem = record
     Caption: string[10];
-    Hint: string[60];
+    Hint: string[78];
     Action: TMenuAction;
   end;
 
@@ -54,9 +54,9 @@ const
     (Caption:'Run'; Hint:'Run highlighted game'; Action:maRun),
     (Caption:'Filter'; Hint:'Filter games by name or type - or just start typing'; Action:maFilterMenu),
     (Caption:'Sort'; Hint:'Name, Developer, Year, Genre, Type, Played, Playtime'; Action:maSortMenu),
-    (Caption:'Add'; Hint:'Not yet implemented: Add game to GameMinder'; Action:maAdd),
-    (Caption:'Edit'; Hint:'Not yet implemented: Edit game in GameMinder'; Action:maEdit),
-    (Caption:'Delete'; Hint:'Not yet implemented: Delete game from GameMinder'; Action:maDelete),
+    (Caption:'Add'; Hint:'Add a game from a directory GameMinder doesn''t list yet (Ins)'; Action:maAdd),
+    (Caption:'Edit'; Hint:'Edit the highlighted game''s details'; Action:maEdit),
+    (Caption:'Delete'; Hint:'Remove the highlighted game from GameMinder - its files are kept (Del)'; Action:maDelete),
     (Caption:'Rescan'; Hint:'Scan for games again, to pick up new or changed games'; Action:maRescan),
     (Caption:'Theme'; Hint:''; Action:maTheme), { Hint shows the current theme }
     (Caption:'Exit'; Hint:'Exit to DOS'; Action:maExit));

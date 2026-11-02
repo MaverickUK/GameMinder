@@ -19,8 +19,9 @@ Both use ExecSwap (TurboPower Software) to launch games: GameMinder swaps itself
 | `LISTVIEW.PAS` | Games list, scrolling, sorting and filtering |
 | `PANELS.PAS` | Help, game info and system status panels |
 | `MENU.PAS` | Horizontal menu |
+| `FORMS.PAS` | Game details form, picking from a list, questions |
 | `RUNNER.PAS` | Running games: swapping, before/after commands, memory check, play stats |
-| `GAMES.PAS` | Games data: info files, play logs, cache, sorting, filtering |
+| `GAMES.PAS` | Games data: info files, play logs, cache, sorting, filtering, finding unlisted games |
 | `LAUNCH.PAS` | Working out the command to run a game |
 | `CONFIG.PAS` | Reading and updating `SETTINGS.TXT` |
 | `THEMES.PAS` | Colour themes from `THEMES.TXT` |
