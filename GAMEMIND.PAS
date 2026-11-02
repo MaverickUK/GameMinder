@@ -8,6 +8,7 @@ Startup, command line and the main input loop. The rest lives in units:
   SCREEN    layout & frame    PANELS    right hand panel GAMES    games data
   MENU      horizontal menu   LAUNCH    launch commands  CONFIG   SETTINGS.TXT
   THEMES    colour themes     FORMS     edit game, pick from list
+  ENDSCRN   exit screen
 ------------------------------}
 uses
     Dos,
@@ -24,6 +25,7 @@ uses
     Config,
     Themes,
     Forms,
+    EndScrn,
     Objects,
     { Launch external executable - Must keep ExecSwap last.
       Turbo Pascal uses EXECSWAP.TPU, Free Pascal uses EXECSWAP\FPC\EXECSWAP.PAS }
@@ -43,7 +45,8 @@ begin
 end;
 
 { Load games from the cache, or scan for them if there's no cache or scan is true.
-  Returns true if the games came from the cache }
+  Returns true if the games came from the cache. A scan shows its progress
+  as [....] when ShowScanProgress is set }
 function LoadGames(scan:boolean):boolean;
 begin
   LoadGames := false;
@@ -57,7 +60,9 @@ begin
     end;
 
   InitGames(MaxGames);
+  if ( ShowScanProgress ) then write('Scanning ', ScanPath, ' [');
   ScanForInfoFiles(ScanPath, InfoFileName);
+  if ( ShowScanProgress ) then writeln(']');
   if ( GameCount > 0 ) then SaveCache;
 end;
 
@@ -72,7 +77,7 @@ begin
   drawPanel;
 end;
 
-{ Plain text screen used while scanning and running games }
+{ Plain text screen used at startup and while scanning, like Doom's }
 procedure ShowTitleScreen;
 begin
   TextColor(White);
@@ -80,11 +85,52 @@ begin
   clrscr;
 
   TextColor(White);
-  TextBackground(Blue);
-  DrawCenter(ApplicationName);
+  TextBackground(Red);
+  DrawCenter('GameMinder System Startup v' + AppVersion);
 
-  TextColor(White);
+  TextColor(LightGray);
   TextBackground(Black);
+  writeln('');
+end;
+
+{ A startup line, e.g. "W_Init: Loaded 37 games" - the part up to the colon is
+  highlighted. Doesn't end the line, so progress can follow }
+procedure StartupText(line:string);
+var
+  colon:byte;
+begin
+  colon := pos(':', line);
+  TextColor(White);
+  write(copy(line, 1, colon));
+  TextColor(LightGray);
+  write(copy(line, colon + 1, 255));
+end;
+
+procedure StartupLine(line:string);
+begin
+  StartupText(line);
+  writeln;
+end;
+
+{ Something to read while GameMinder starts, chosen at random }
+function FlavourLine:string;
+const
+  FlavourCount = 12;
+  Flavours: array[1..FlavourCount] of string[50] = (
+    'I_Init: Checking for IRQ conflicts... none',
+    'I_Init: Calibrating joystick... centred',
+    'I_Init: Parking hard disk heads',
+    'I_Init: Counting floppy disks... too many',
+    'I_Init: Blowing dust out of the disk drive',
+    'I_Init: Reticulating splines',
+    'Z_Init: Defragmenting upper memory... done',
+    'Z_Init: Squeezing past the 640K barrier',
+    'S_Init: Tuning the PC speaker',
+    'S_Init: Setting BLASTER=A220 I5 D1',
+    'V_Init: Degaussing monitor',
+    'V_Init: Counting colours... all 16');
+begin
+  FlavourLine := Flavours[Random(FlavourCount) + 1];
 end;
 
 { ////////////////// Actions ////////////////// }
@@ -120,7 +166,7 @@ begin
   if ( HighlightedGame <> nil ) then highlightedPath := PStr(HighlightedGame^.Path);
 
   ShowTitleScreen;
-  writeln('Scanning ', ScanPath, ' for ', InfoFileName, ' files');
+  StartupText('W_Init: ');
   ShowScanProgress := true;
   LoadGames(true);
   ShowScanProgress := false;
@@ -153,6 +199,7 @@ begin
   if EditGameForm(game, 'Edit ' + PStr(game^.Name)) then begin
     if not SaveInfoFile(game, InfoFileName) then
       ShowMessage('Unable to save ' + PStr(game^.Path) + InfoFileName);
+    inc(SessionEdits);
     SortGames(CurrentSort);
     ShowGame(game);
     SaveCache;
@@ -197,6 +244,7 @@ begin
         ShowMessage('Saved, but GameMinder already lists MaxGames games')
       else begin
         if ( PlayStatsEnabled ) then LoadPlayStats(game);
+        inc(SessionEdits);
         SortGames(CurrentSort);
         ShowGame(game);
         SaveCache;
@@ -387,27 +435,42 @@ end;
 
 { ////////////////// Startup ////////////////// }
 
+{ Load everything, showing what's happening like Doom's startup }
 procedure Startup;
+var
+  plays,minutes,ems:longint;
+  mostPlayed:PGame;
 begin
+  Randomize;
   ShowTitleScreen;
 
-  writeln('Using setup file ', ExeDir, SettingsFileName);
+  StartupLine('M_LoadDefaults: ' + ExeDir + SettingsFileName);
   if not LoadSettingsFile then begin
     TextColor(Yellow);
-    writeln('Setup file not found, using default settings');
-    TextColor(White);
+    writeln('                Not found, using default settings');
   end;
-  LoadTheme;
-  writeln('');
 
-  writeln('Looking for games in ', ScanPath);
+  LoadTheme;
+  if ( ThemeCount = 0 ) then
+    StartupLine('T_Init: No themes in ' + ThemesFileName + ', using Color settings')
+  else if ( CurrentTheme = 0 ) then
+    StartupLine('T_Init: ' + ConvertToString(ThemeCount) + ' colour themes, using Color settings')
+  else
+    StartupLine('T_Init: ' + ConvertToString(ThemeCount) + ' colour themes, using ' + ThemeName(CurrentTheme));
+
+  ems := EmsFreeKB;
+  if ( ems > 0 ) then
+    StartupLine('Z_Init: ' + ConvertToString(AvailableMemoryKB) + 'KB conventional, ' +
+      ConvertToString(ems) + 'KB EMS free for games')
+  else
+    StartupLine('Z_Init: ' + ConvertToString(AvailableMemoryKB) + 'KB conventional memory free for games');
+
+  StartupText('W_Init: ');
   ShowScanProgress := true;
   if LoadGames(ForceScan) then
-    writeln('Loaded ', GameCount, ' game(s) from ', CacheFileName, ' - use Rescan to look for new games')
-  else if ( GameCount > 0 ) then begin
-    writeln('');
-    writeln('Scanned ', ScanPath, ', ', GameCount, ' game(s) found');
-  end;
+    writeln('Loaded ', GameCount, ' games from ', CacheFileName)
+  else if ( GameCount > 0 ) then
+    writeln('        ', GameCount, ' games found');
   ShowScanProgress := false;
 
   if ( GameCapReached ) then begin
@@ -431,12 +494,23 @@ begin
     Halt(1);
   end;
 
-  writeln('Sorting games');
+  if ( EnablePlayStats ) then begin
+    GetLibraryStats(plays, minutes, mostPlayed);
+    if ( plays = 0 ) then
+      StartupLine('P_Init: No plays logged yet')
+    else if ( minutes = 0 ) then
+      StartupLine('P_Init: ' + ConvertToString(plays) + ' plays logged')
+    else
+      StartupLine('P_Init: ' + ConvertToString(plays) + ' plays, ' +
+        MinutesToFriendlyTime(minutes) + ' of play logged');
+  end;
+
+  StartupLine('L_Init: Sorting by ' + SortModeName(DefaultSort));
   SortGames(DefaultSort);
   Mode := DefaultView;
 
-  { TODO: Pick random text on each startup }
-  writeln('Reticulating splines');
+  StartupLine(FlavourLine);
+  StartupLine('D_GameLoop: Ready');
 
   Delay(DelayOnStartup);
 end;
@@ -580,7 +654,9 @@ begin
   RestoreScreenMode;
   NormVideo;
   clrscr;
+  if ( ExitScreen ) then
+    ShowEndScreen
+  else
+    writeln('Thanks for using GameMinder');
   DoneGames;
-  writeln('Thanks for using GameMinder');
-  { TODO: Fancy ASCII exit screen like an Apogee game }
 end.

@@ -591,6 +591,39 @@ begin
   DoneGames;
 end;
 
+procedure TestStats;
+var
+  plays,minutes:longint;
+  mostPlayed:PGame;
+  i:integer;
+begin
+  InitGames(10);
+  GetLibraryStats(plays, minutes, mostPlayed);
+  CheckInt('GetLibraryStats no games plays', 0, plays);
+  CheckBool('GetLibraryStats no games most played', true, mostPlayed = nil);
+
+  AddGame(MakeGame('Doom', '', '', 3, 120));
+  AddGame(MakeGame('Civ', '', '', 2, 600));
+  AddGame(MakeGame('Keen', '', '', 1, 0));
+  GetLibraryStats(plays, minutes, mostPlayed);
+  CheckInt('GetLibraryStats plays', 6, plays);
+  CheckInt('GetLibraryStats minutes', 720, minutes);
+  CheckStr('GetLibraryStats most played', 'Civ', PStr(mostPlayed^.Name));
+  DoneGames;
+
+  SessionCount := 0;
+  RecordSessionPlay('Doom', 10);
+  RecordSessionPlay('Keen', 0);
+  RecordSessionPlay('Doom', 5);
+  CheckInt('RecordSessionPlay counts a game once', 2, SessionCount);
+  CheckInt('RecordSessionPlay adds minutes', 15, SessionMinutes[1]);
+  CheckStr('RecordSessionPlay name', 'Keen', SessionNames[2]);
+  for i := 1 to MaxSessionGames + 2 do
+    RecordSessionPlay('Game ' + FormatDatePart(i, 2), 1);
+  CheckInt('RecordSessionPlay limit', MaxSessionGames, SessionCount);
+  SessionCount := 0;
+end;
+
 procedure TestFindGames;
 var
   list:PStringCollection;
@@ -690,6 +723,7 @@ begin
   TestSortModes;
   TestCache;
   TestEditGames;
+  TestStats;
   TestFindGames;
   TestLaunch;
 

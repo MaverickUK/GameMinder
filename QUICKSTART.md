@@ -125,6 +125,7 @@ All configurable options are in this file, with a comment explaining each one, s
 | `DefaultSort` | Sort order on startup: `Name`, `Developer`, `Year`, `Genre`, `Type`, `TimesPlayed` or `TimePlayed` |
 | `DefaultView` | Right hand panel on startup: `Help`, `Info`, `Status` or `Full` |
 | `WaitForKeyAfterGame` | Pause after a game exits, to read any messages it left |
+| `ExitScreen` | `false` to exit with a one-line message rather than the end screen showing what you played |
 | `Theme` | Theme from `THEMES.TXT`, set by the Theme menu option |
 | `Color...` | Individual colours, used when `Theme` is blank |
 

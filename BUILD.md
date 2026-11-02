@@ -25,6 +25,7 @@ Both use ExecSwap (TurboPower Software) to launch games: GameMinder swaps itself
 | `LAUNCH.PAS` | Working out the command to run a game |
 | `CONFIG.PAS` | Reading and updating `SETTINGS.TXT` |
 | `THEMES.PAS` | Colour themes from `THEMES.TXT` |
+| `ENDSCRN.PAS` | Exit screen: logo and this session's games |
 | `UTILITY.PAS` | Strings, paths, dates |
 
 `GAMES`, `LAUNCH`, `CONFIG`, `PREFS`, `THEMES` and `UTILITY` don't use the screen, so they're unit tested on any OS.

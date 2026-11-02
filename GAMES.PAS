@@ -20,6 +20,8 @@ const
   { Play stats }
   PlayStatsFile_StartMarker = '>'; { Indicate start date/time of game in file }
   PlayStatsFile_MinutesPlayedMarker = '<'; { Indicate minutes played game for }
+  { Games remembered for the exit screen }
+  MaxSessionGames = 8;
   { !GM_INFO.TXT keys, in the order they're written }
   InfoFieldCount = 11;
   InfoFieldKeys: array[1..InfoFieldCount] of string[9] = (
@@ -70,6 +72,11 @@ var
   CurrentFilter: string[30];
   PlayStatsEnabled: boolean;
   ShowScanProgress: boolean;
+  { This session, for the exit screen }
+  SessionCount: integer; { Different games played }
+  SessionNames: array[1..MaxSessionGames] of string[40];
+  SessionMinutes: array[1..MaxSessionGames] of longint;
+  SessionEdits: integer; { Games added or edited }
 
 { Setup & teardown }
 procedure InitGames(maxCount:integer);
@@ -105,6 +112,9 @@ function ViewGame(index:integer):PGame;
 function IndexInView(game:PGame):integer;
 function SortModeName(mode:TSortMode):string;
 function ParseSortMode(name:string; default:TSortMode):TSortMode;
+{ Stats }
+procedure GetLibraryStats(var plays:longint; var minutes:longint; var mostPlayed:PGame);
+procedure RecordSessionPlay(name:string; minutes:longint);
 
 { --------- implementation --------- }
 implementation
@@ -814,6 +824,46 @@ begin
   else ParseSortMode := default;
 end;
 
+{ ////////////////// Stats ////////////////// }
+
+{ Total plays and minutes played across all games, and the game played longest (nil if none) }
+procedure GetLibraryStats(var plays:longint; var minutes:longint; var mostPlayed:PGame);
+var
+  i:integer;
+  game:PGame;
+begin
+  plays := 0;
+  minutes := 0;
+  mostPlayed := nil;
+  if ( GameList = nil ) then exit;
+
+  for i := 0 to GameList^.Count - 1 do begin
+    game := GameList^.At(i);
+    inc(plays, game^.TimesPlayed);
+    inc(minutes, game^.MinutesPlayed);
+    if ( game^.MinutesPlayed > 0 ) then
+      if ( mostPlayed = nil ) or ( game^.MinutesPlayed > mostPlayed^.MinutesPlayed ) then
+        mostPlayed := game;
+  end;
+end;
+
+{ Remember a game played this session. Playing a game again adds to its minutes }
+procedure RecordSessionPlay(name:string; minutes:longint);
+var
+  i:integer;
+begin
+  for i := 1 to SessionCount do
+    if ( SessionNames[i] = copy(name, 1, 40) ) then begin
+      inc(SessionMinutes[i], minutes);
+      exit;
+    end;
+
+  if ( SessionCount >= MaxSessionGames ) then exit;
+  inc(SessionCount);
+  SessionNames[SessionCount] := name;
+  SessionMinutes[SessionCount] := minutes;
+end;
+
 begin
   GameList := nil;
   View := nil;
@@ -822,4 +872,6 @@ begin
   CurrentFilter := '';
   PlayStatsEnabled := true;
   ShowScanProgress := false;
+  SessionCount := 0;
+  SessionEdits := 0;
 end.

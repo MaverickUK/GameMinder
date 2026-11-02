@@ -44,6 +44,7 @@ var
   EnablePlayStats:boolean;
   WaitForKeyAfterGame:boolean;
   CacheGames:boolean;
+  ExitScreen:boolean; { Show the end screen with session stats on exit }
   ThemeSetting:string[20]; { Theme from THEMES.TXT, blank to use the Color settings }
   DefaultSort:TSortMode;
   DefaultView:byte;
@@ -99,6 +100,7 @@ begin
   EnablePlayStats := GetConfigBool('EnablePlayStats', true);
   WaitForKeyAfterGame := GetConfigBool('WaitForKeyAfterGame', false);
   CacheGames := GetConfigBool('CacheGames', true);
+  ExitScreen := GetConfigBool('ExitScreen', true);
   ThemeSetting := GetConfigString('Theme', '');
   DefaultSort := ParseSortMode(GetConfigString('DefaultSort', ''), smName);
   DefaultView := ParseView(GetConfigString('DefaultView', ''), ModeInfo);

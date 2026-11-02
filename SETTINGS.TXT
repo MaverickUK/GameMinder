@@ -43,6 +43,9 @@ UseEmsForSwapFile:true
 ; Show extra detail while scanning and launching games
 VerboseOutput:false
 
+; Show GameMinder's end screen, with what you played this session, when exiting
+ExitScreen:true
+
 ; Colour theme from THEMES.TXT - change it with Theme in the menu, which
 ; updates this line. Leave blank to use the Color settings below instead
 Theme:Classic

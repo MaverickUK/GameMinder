@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.6.0] - 2026-11-02
+
+### Added
+- End screen on exit, like the ones DOS games left behind: the GameMinder logo, the games you played this session and for how long, your library's totals and most played game. It stays above the DOS prompt, with no key to press. `ExitScreen:false` in `SETTINGS.TXT` turns it off
+
+### Changed
+- Startup screen in the style of Doom's, showing what GameMinder is doing: settings, themes, memory free for games (including EMS), the games scan with a progress bar, and play stats logged
+
 ## [0.5.0] - 2026-11-02
 
 ### Added
@@ -116,6 +124,7 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.6.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.6.0
 [0.5.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.5.0
 [0.4.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.4.0
 [0.3.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.3.0

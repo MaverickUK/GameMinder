@@ -13,6 +13,7 @@ const
   LaunchCancelled = $FFFF; { Returned by LaunchGame if the player chose not to run it }
 
 function AvailableMemoryKB:longint;
+function EmsFreeKB:longint;
 function LaunchGame(game:PGame; interactive:boolean):word;
 
 { --------- implementation --------- }
@@ -48,6 +49,27 @@ begin
   inc(paragraphs, regs.BX);
 
   AvailableMemoryKB := paragraphs * 16 div 1024 - ResidentKB;
+end;
+
+{ Free expanded (EMS) memory in KB, 0 if there's no EMS driver }
+function EmsFreeKB:longint;
+const
+  DriverName: string[8] = 'EMMXXXX0';
+var
+  regs:Registers;
+  driverSeg:word;
+  i:integer;
+begin
+  EmsFreeKB := 0;
+
+  { The driver's name is 10 bytes into the segment its interrupt 67h handler is in }
+  driverSeg := MemW[0:$67 * 4 + 2];
+  for i := 1 to length(DriverName) do
+    if ( Chr(Mem[driverSeg:$0A + i - 1]) <> DriverName[i] ) then exit;
+
+  regs.AH := $42; { Get unallocated page count, 16KB pages }
+  Intr($67, regs);
+  if ( regs.AH = 0 ) then EmsFreeKB := longint(regs.BX) * 16;
 end;
 
 { Directory for temporary files - %TEMP% if set, otherwise next to GAMEMIND.EXE }
@@ -274,10 +296,12 @@ begin
     end;
   end
   else begin
+    GetDate(y,m,d,dow);
+    GetTime(h,min,s,hund);
+    playTimeMinutes := ElapsedMinutes(startDay, startMinute, DayNumber(y,m,d), h * 60 + min);
+    RecordSessionPlay(PStr(game^.Name), playTimeMinutes);
+
     if ( EnablePlayStats ) then begin
-      GetDate(y,m,d,dow);
-      GetTime(h,min,s,hund);
-      playTimeMinutes := ElapsedMinutes(startDay, startMinute, DayNumber(y,m,d), h * 60 + min);
       VerboseWriteln('Logging play time of ' + ConvertToString(playTimeMinutes) + ' minute(s)');
       AppendPlayLog(game, PlayStatsFile_MinutesPlayedMarker + ConvertToString(playTimeMinutes));
     end;
