@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [Unreleased]
+
+### Fixed
+- GameMinder hung at startup, before showing anything, on PCs without a maths coprocessor, such as many 386s. This affected every release built with Free Pascal (v0.2.0 onwards)
+
 ## [0.6.0] - 2026-11-02
 
 ### Added

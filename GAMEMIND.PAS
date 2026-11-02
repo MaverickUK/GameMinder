@@ -8,9 +8,10 @@ Startup, command line and the main input loop. The rest lives in units:
   SCREEN    layout & frame    PANELS    right hand panel GAMES    games data
   MENU      horizontal menu   LAUNCH    launch commands  CONFIG   SETTINGS.TXT
   THEMES    colour themes     FORMS     edit game, pick from list
-  ENDSCRN   exit screen
+  ENDSCRN   exit screen       FPUFIX    PCs without an FPU
 ------------------------------}
 uses
+    FpuFix, { Must be first - see FPUFIX.PAS }
     Dos,
     Crt, { https://theasciicode.com.ar/extended-ascii-code/graphic-character-high-density-dotted-ascii-code-178.html }
     { GameMinder modules }
