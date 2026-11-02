@@ -6,7 +6,7 @@
 # DOSBox-X's AUTOTYPE and captures it with DX-CAPTURE. No window is shown.
 #
 # Usage:   scripts/record-demo.sh path/to/GAMEMIND.EXE
-# Needs:   dosbox-x, ffmpeg, python3
+# Needs:   DOSBox-X (on PATH, or set DOSBOX_X), ffmpeg, Python 3
 # Output:  docs/gameminder-demo.gif and docs/gameminder-demo.mp4
 #
 # Get GAMEMIND.EXE from a CI run: gh run download <run-id> -n gamemind-dos
@@ -17,7 +17,22 @@ repo=$(cd "$(dirname "$0")/.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-python3 "$repo/scripts/make-testdata.py" "$work/c"
+# Windows paths for DOSBox-X when running in Git Bash, otherwise unchanged
+native() { if command -v cygpath > /dev/null; then cygpath -w "$1"; else echo "$1"; fi; }
+
+dosbox=${DOSBOX_X:-$(command -v dosbox-x || true)}
+for guess in "$HOME/scoop/apps/dosbox-x/current/dosbox-x.exe" "/c/Program Files/DOSBox-X/dosbox-x.exe"; do
+  if [ -z "$dosbox" ] && [ -x "$guess" ]; then dosbox=$guess; fi
+done
+[ -n "$dosbox" ] || { echo "DOSBox-X not found - install it or set DOSBOX_X" >&2; exit 1; }
+
+python=
+for p in python3 python py; do
+  if "$p" -c 'import sys; sys.exit(sys.version_info < (3, 6))' 2> /dev/null; then python=$p; break; fi
+done
+[ -n "$python" ] || { echo "Python 3 not found" >&2; exit 1; }
+
+"$python" "$repo/scripts/make-testdata.py" "$work/c"
 
 cp "$exe" "$work/c/GMIND/GAMEMIND.EXE"
 cp "$repo/THEMES.TXT" "$work/c/GMIND/THEMES.TXT"
@@ -25,15 +40,15 @@ mkdir -p "$work/capture"
 
 # Each key is pressed 1.2s apart, "," adds an extra pause. Keep the autotype command
 # under 255 characters, or DOSBox-X ignores the end of it:
-#   browse, help (F1), status (F3), info (F2), full screen (F4), sort by year/played/name,
+#   browse, help (F1), status (F3), info (F2), full screen (F4), sort by played/name,
 #   type "keen" to filter, run Commander Keen 4 (a .BAT), quit it ("y"), check play stats,
-#   Esc clears the filter, Sort menu > Developer, Esc back, Theme x4 (Classic, Turbo,
-#   Commander, Mono), Esc exits
-keys="down down down f1 , f3 , f2 f4 , f7 , f9 , f5 f2 k e e n , down , enter , , , y , f2 , esc right right enter right enter , esc right right right right right enter , enter , enter , enter , esc"
+#   Esc clears the filter, Sort menu > Developer, Esc back, Add (Ins) Raptor, type its
+#   developer and save (F10), Theme > Turbo, Commander, Mono and keep it, Esc exits
+keys="down down f1 , f3 , f2 f4 , f9 , f5 f2 k e e n , down , enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down a p o g e e , f10 , left left left left enter , right , right , right , enter , esc"
 
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy dosbox-x -fastlaunch -nomenu -exit -time-limit 180 \
-  -set "dosbox captures=$work/capture" \
-  -c "mount c $work/c" -c "c:" -c "cls" -c "cd \\GMIND" \
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$dosbox" -fastlaunch -nomenu -exit -time-limit 240 \
+  -set "dosbox captures=$(native "$work/capture")" \
+  -c "mount c \"$(native "$work/c")\"" -c "c:" -c "cls" -c "cd \\GMIND" \
   -c "autotype -w 4 -p 1.2 $keys" \
   -c "dx-capture /v GAMEMIND.EXE" > "$work/dosbox.log" 2>&1
 

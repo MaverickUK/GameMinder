@@ -78,6 +78,7 @@ def add_stand_in(game_dir, name, exec_line):
     if program.upper().endswith('.BAT'):
         write(path, stand_in_bat(name))
     else:
+        os.makedirs(game_dir, exist_ok=True)
         with open(path, 'wb') as f:
             f.write(stand_in_com(name))
 
@@ -144,6 +145,10 @@ for d, name, exe, dev, year, genre, video, sound, plays, minutes in games:
     if d in memory:
         info += f'memory:{memory[d]}\n'
     add_game(d, info, name, exe, play_log(plays, minutes, rng) if plays else None)
+
+# A game with no !GM_INFO.TXT yet, for Add to find - it should suggest RAP.EXE, not SETUP.EXE
+for program in ('RAP.EXE', 'SETUP.EXE'):
+    add_stand_in(f'{c}/GAMES/RAPTOR', 'Raptor', program)
 
 # ---- Edge cases ----
 
