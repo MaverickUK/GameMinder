@@ -35,12 +35,13 @@ const
 
   { * marks the fields needed to save, see ValidForm }
   FieldLabels: array[1..InfoFieldCount] of string[10] = (
-    'Name *', 'Exec *', 'Developer', 'Year', 'Genre', 'Type',
-    'Video', 'Sound', 'Memory KB', 'Before', 'After');
+    'Name *', 'Exec *', 'Setup', 'Developer', 'Year', 'Genre', 'Type',
+    'Video', 'Sound', 'Memory KB', 'Before', 'After', 'Notes');
 
   FieldHints: array[1..InfoFieldCount] of string[70] = (
     'Name shown in the games list (needed)',
     'Program to run, and any arguments e.g. KEEN4.EXE /NOJOY (needed)',
+    'Setup program for sound, video and controls e.g. SETUP.EXE',
     'Who made the game',
     'Year it was released e.g. 1991',
     'e.g. Platform, Adventure, Strategy',
@@ -49,7 +50,8 @@ const
     'e.g. PC Speaker, AdLib, Sound Blaster',
     'Conventional memory the game needs in KB e.g. 580',
     'Command run before the game e.g. C:\MOUSE\MOUSE.COM',
-    'Command run after the game e.g. C:\MOUSE\MOUSE OFF');
+    'Command run after the game e.g. C:\MOUSE\MOUSE OFF',
+    'Anything to remember e.g. Needs the CD in the drive');
 
 type
   TFieldValues = array[1..InfoFieldCount] of string[MaxFieldLength];
@@ -168,7 +170,11 @@ end;
 function ValidForm(game:PGame; var values:TFieldValues; var current:integer):boolean;
 var
   program_:string;
+  memory,setup:integer;
 begin
+  memory := InfoFieldIndex('MEMORY');
+  setup := InfoFieldIndex('SETUP');
+
   ValidForm := false;
 
   if ( length(Trim(values[1])) = 0 ) then begin
@@ -183,8 +189,8 @@ begin
     exit;
   end;
 
-  if ( length(Trim(values[9])) > 0 ) and ( ParseMemoryKB(values[9]) = 0 ) then begin
-    current := 9;
+  if ( length(Trim(values[memory])) > 0 ) and ( ParseMemoryKB(values[memory]) = 0 ) then begin
+    current := memory;
     ShowMessage('Memory should be a number of KB e.g. 580');
     exit;
   end;
@@ -193,6 +199,14 @@ begin
   if not FileExists(program_) then begin
     current := 2;
     if not Confirm('Can''t find ' + program_ + ' - save anyway?') then exit;
+  end;
+
+  if ( length(Trim(values[setup])) > 0 ) then begin
+    program_ := GameProgram(PStr(game^.Path), values[setup]);
+    if not FileExists(program_) then begin
+      current := setup;
+      if not Confirm('Can''t find ' + program_ + ' - save anyway?') then exit;
+    end;
   end;
 
   ValidForm := true;

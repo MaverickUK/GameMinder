@@ -1,7 +1,8 @@
 Unit Runner;
 {-----------------------------
 Run games - swapping GameMinder out of memory with ExecSwap,
-running before/after commands, checking memory and logging play stats
+running before/after commands, checking memory and logging play stats.
+Also runs games' setup programs
 ------------------------------}
 
 { --------- interface -------- }
@@ -15,6 +16,7 @@ const
 function AvailableMemoryKB:longint;
 function EmsFreeKB:longint;
 function LaunchGame(game:PGame; interactive:boolean):word;
+function LaunchSetup(game:PGame; interactive:boolean):word;
 
 { --------- implementation --------- }
 implementation
@@ -198,6 +200,36 @@ begin
   end;
 end;
 
+{ Clear the screen for a game or setup program to start }
+procedure ShowLaunchScreen;
+begin
+  TextBackground(Black);
+  clrscr;
+
+  TextColor(White);
+  TextBackground(Blue);
+  DrawCenter('GameMinder');
+
+  TextColor(White);
+  TextBackground(Black);
+  ShowCursor;
+end;
+
+{ Report a program that couldn't be run, waiting for a key if interactive }
+procedure ShowLaunchError(command:string; status:word; interactive:boolean);
+begin
+  TextColor(LightRed);
+  writeln('');
+  writeln('Unable to run ', command);
+  writeln(DosErrorText(status));
+  TextColor(White);
+  if ( interactive ) then begin
+    writeln('');
+    writeln('Press any key to return to GameMinder');
+    ReadKey;
+  end;
+end;
+
 { Run a game and record play stats. Interactive asks before running a game that
   may not fit in memory and waits for a key after errors.
   Returns 0 on success, a DOS error code, or LaunchCancelled }
@@ -214,33 +246,13 @@ var
 begin
   useScript := NeedsLaunchScript(PStr(game^.Before), PStr(game^.After));
 
-  if ( interactive ) then begin
-    TextBackground(Black);
-    clrscr;
-
-    TextColor(White);
-    TextBackground(Blue);
-    DrawCenter('GameMinder');
-
-    TextColor(White);
-    TextBackground(Black);
-    ShowCursor;
-  end;
+  if ( interactive ) then ShowLaunchScreen;
 
   writeln('Starting ', PStr(game^.Name));
 
   { Check the game is there first, so a failed launch isn't counted as a play }
   if not FileExists(GameProgram(PStr(game^.Path), PStr(game^.Exec))) then begin
-    TextColor(LightRed);
-    writeln('');
-    writeln('Unable to run ', GameProgram(PStr(game^.Path), PStr(game^.Exec)));
-    writeln(DosErrorText(2));
-    TextColor(White);
-    if ( interactive ) then begin
-      writeln('');
-      writeln('Press any key to return to GameMinder');
-      ReadKey;
-    end;
+    ShowLaunchError(GameProgram(PStr(game^.Path), PStr(game^.Exec)), 2, interactive);
     LaunchGame := 2; { File not found }
     exit;
   end;
@@ -283,18 +295,8 @@ begin
   { Games can leave the screen in a graphics mode }
   if ( interactive ) then TextMode(StartupVideoMode);
 
-  if ( status <> 0 ) then begin
-    TextColor(LightRed);
-    writeln('');
-    writeln('Unable to run ', prog, ' ', args);
-    writeln(DosErrorText(status));
-    TextColor(White);
-    if ( interactive ) then begin
-      writeln('');
-      writeln('Press any key to return to GameMinder');
-      ReadKey;
-    end;
-  end
+  if ( status <> 0 ) then
+    ShowLaunchError(prog + ' ' + args, status, interactive)
   else begin
     GetDate(y,m,d,dow);
     GetTime(h,min,s,hund);
@@ -319,6 +321,41 @@ begin
   if ( EnablePlayStats ) then LoadPlayStats(game);
 
   LaunchGame := status;
+end;
+
+{ Run a game's setup program. It isn't counted as a play, and the game's
+  before/after commands and memory check aren't used.
+  Returns 0 on success or a DOS error code }
+function LaunchSetup(game:PGame; interactive:boolean):word;
+var
+  prog,args:string;
+  status:word;
+begin
+  if ( interactive ) then ShowLaunchScreen;
+
+  writeln('Starting ', PStr(game^.Name), ' setup');
+
+  if not FileExists(GameProgram(PStr(game^.Path), PStr(game^.Setup))) then begin
+    ShowLaunchError(GameProgram(PStr(game^.Path), PStr(game^.Setup)), 2, interactive);
+    LaunchSetup := 2; { File not found }
+    exit;
+  end;
+
+  BuildLaunchCommand(PStr(game^.Path), PStr(game^.Setup), ComSpec, prog, args);
+  status := Execute(prog, args, PStr(game^.Path));
+
+  { Setup programs can leave the screen in a graphics mode too }
+  if ( interactive ) then TextMode(StartupVideoMode);
+
+  if ( status <> 0 ) then
+    ShowLaunchError(prog + ' ' + args, status, interactive)
+  else if ( WaitForKeyAfterGame ) and ( interactive ) then begin
+    writeln('');
+    writeln('Press any key to return to GameMinder');
+    ReadKey;
+  end;
+
+  LaunchSetup := status;
 end;
 
 end.

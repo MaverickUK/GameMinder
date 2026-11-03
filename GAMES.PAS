@@ -23,10 +23,12 @@ const
   { Games remembered for the exit screen }
   MaxSessionGames = 8;
   { !GM_INFO.TXT keys, in the order they're written }
-  InfoFieldCount = 11;
+  InfoFieldCount = 13;
   InfoFieldKeys: array[1..InfoFieldCount] of string[9] = (
-    'NAME', 'EXEC', 'DEVELOPER', 'YEAR', 'GENRE', 'TYPE',
-    'VIDEO', 'SOUND', 'MEMORY', 'BEFORE', 'AFTER');
+    'NAME', 'EXEC', 'SETUP', 'DEVELOPER', 'YEAR', 'GENRE', 'TYPE',
+    'VIDEO', 'SOUND', 'MEMORY', 'BEFORE', 'AFTER', 'NOTES');
+  { Popularity levels, from never played to most played }
+  MaxPopularity = 4;
 
 type
   { Games sorting modes }
@@ -38,6 +40,7 @@ type
     Name: PString;      { Keen 1 }
     Path: PString;      { C:\games\keen1\ }
     Exec: PString;      { keen1.exe }
+    Setup: PString;     { Setup program e.g. SETUP.EXE, to choose sound and video settings }
     Developer: PString; { id software }
     Year: PString;      { 1991 }
     Genre: PString;     { Platform }
@@ -47,6 +50,7 @@ type
     MemoryKB: word;     { Conventional memory needed, 0 if not known }
     Before: PString;    { Command run before the game e.g. MOUSE.COM }
     After: PString;     { Command run after the game e.g. MOUSE OFF }
+    Notes: PString;     { Anything to remember e.g. Needs the CD in the drive }
     { Play stats }
     LastPlayed: PString; { yyyy/mm/dd HH:MM }
     TimesPlayed: word;
@@ -77,6 +81,7 @@ var
   SessionNames: array[1..MaxSessionGames] of string[40];
   SessionMinutes: array[1..MaxSessionGames] of longint;
   SessionEdits: integer; { Games added or edited }
+  MostMinutesPlayed: longint; { Longest any game has been played, set by UpdatePopularity }
 
 { Setup & teardown }
 procedure InitGames(maxCount:integer);
@@ -88,18 +93,22 @@ function NewGame:PGame;
 procedure DisposeGame(game:PGame);
 function GameFieldValue(game:PGame; key:string):string;
 procedure SetGameField(game:PGame; key:string; value:string);
+function InfoFieldIndex(key:string):integer;
+function HasSetup(game:PGame):boolean;
 procedure ApplyPlayStatsLine(game:PGame; line:string);
 function LoadInfoFile(path:string; infoFileName:string):PGame;
 procedure LoadPlayStats(game:PGame);
 function AppendPlayLog(game:PGame; line:string):boolean;
 function AddGame(game:PGame):boolean;
 procedure ScanForInfoFiles(path:string; infoFileName:string);
+procedure ScanForGames(scanPaths:string; infoFileName:string);
 { Adding, editing and removing games }
 function SaveInfoFile(game:PGame; infoFileName:string):boolean;
 function DeleteInfoFile(game:PGame; infoFileName:string):boolean;
 procedure RemoveGame(game:PGame);
 function ExecScore(fileName:string):integer;
 function SuggestExec(dir:string):string;
+function SuggestSetup(dir:string):string;
 procedure FindUnlistedDirs(scanPath:string; infoFileName:string; list:PStringCollection);
 { Cache }
 function SaveGameCache(fileName:string; scanPath:string; infoFileName:string):boolean;
@@ -115,6 +124,8 @@ function ParseSortMode(name:string; default:TSortMode):TSortMode;
 { Stats }
 procedure GetLibraryStats(var plays:longint; var minutes:longint; var mostPlayed:PGame);
 procedure RecordSessionPlay(name:string; minutes:longint);
+procedure UpdatePopularity;
+function PopularityLevel(game:PGame):byte;
 
 { --------- implementation --------- }
 implementation
@@ -128,6 +139,7 @@ begin
   DisposeStr(game^.Name);
   DisposeStr(game^.Path);
   DisposeStr(game^.Exec);
+  DisposeStr(game^.Setup);
   DisposeStr(game^.Developer);
   DisposeStr(game^.Year);
   DisposeStr(game^.Genre);
@@ -136,6 +148,7 @@ begin
   DisposeStr(game^.GameType);
   DisposeStr(game^.Before);
   DisposeStr(game^.After);
+  DisposeStr(game^.Notes);
   DisposeStr(game^.LastPlayed);
   Dispose(game);
 end;
@@ -213,6 +226,7 @@ begin
   GameFieldValue := '';
   if ( key = 'NAME' ) then GameFieldValue := PStr(game^.Name)
   else if ( key = 'EXEC' ) then GameFieldValue := PStr(game^.Exec)
+  else if ( key = 'SETUP' ) then GameFieldValue := PStr(game^.Setup)
   else if ( key = 'DEVELOPER' ) then GameFieldValue := PStr(game^.Developer)
   else if ( key = 'YEAR' ) then GameFieldValue := PStr(game^.Year)
   else if ( key = 'GENRE' ) then GameFieldValue := PStr(game^.Genre)
@@ -223,7 +237,8 @@ begin
     if ( game^.MemoryKB > 0 ) then GameFieldValue := ConvertToString(game^.MemoryKB);
   end
   else if ( key = 'BEFORE' ) then GameFieldValue := PStr(game^.Before)
-  else if ( key = 'AFTER' ) then GameFieldValue := PStr(game^.After);
+  else if ( key = 'AFTER' ) then GameFieldValue := PStr(game^.After)
+  else if ( key = 'NOTES' ) then GameFieldValue := PStr(game^.Notes);
 end;
 
 { Set a game field from a !GM_INFO.TXT key - key must be upper case }
@@ -231,6 +246,7 @@ procedure SetGameField(game:PGame; key:string; value:string);
 begin
   if ( key = 'NAME' ) then ReplaceStr(game^.Name, value)
   else if ( key = 'EXEC' ) then ReplaceStr(game^.Exec, value)
+  else if ( key = 'SETUP' ) then ReplaceStr(game^.Setup, value)
   else if ( key = 'DEVELOPER' ) then ReplaceStr(game^.Developer, value)
   else if ( key = 'YEAR' ) then ReplaceStr(game^.Year, value)
   else if ( key = 'GENRE' ) then ReplaceStr(game^.Genre, value)
@@ -239,7 +255,24 @@ begin
   else if ( key = 'TYPE' ) then ReplaceStr(game^.GameType, value)
   else if ( key = 'MEMORY' ) then game^.MemoryKB := ParseMemoryKB(value)
   else if ( key = 'BEFORE' ) then ReplaceStr(game^.Before, value)
-  else if ( key = 'AFTER' ) then ReplaceStr(game^.After, value);
+  else if ( key = 'AFTER' ) then ReplaceStr(game^.After, value)
+  else if ( key = 'NOTES' ) then ReplaceStr(game^.Notes, value);
+end;
+
+{ Index of an info file key in InfoFieldKeys, 0 if GameMinder doesn't use it }
+function InfoFieldIndex(key:string):integer;
+var
+  i:integer;
+begin
+  InfoFieldIndex := 0;
+  for i := 1 to InfoFieldCount do
+    if ( InfoFieldKeys[i] = key ) then InfoFieldIndex := i;
+end;
+
+{ Whether a game has a setup program to run }
+function HasSetup(game:PGame):boolean;
+begin
+  HasSetup := ( game <> nil ) and ( length(Trim(PStr(game^.Setup))) > 0 );
 end;
 
 { Apply a single line from a !GM_LOG.TXT file to a game's stats }
@@ -394,17 +427,16 @@ begin
   {$ENDIF}
 end;
 
-{ ////////////////// Adding, editing and removing games ////////////////// }
-
-{ Index of an info file key, 0 if GameMinder doesn't use it }
-function InfoFieldIndex(key:string):integer;
+{ Search each directory in a ; separated ScanPath list for game info files }
+procedure ScanForGames(scanPaths:string; infoFileName:string);
 var
   i:integer;
 begin
-  InfoFieldIndex := 0;
-  for i := 1 to InfoFieldCount do
-    if ( InfoFieldKeys[i] = key ) then InfoFieldIndex := i;
+  for i := 1 to ScanPathCount(scanPaths) do
+    ScanForInfoFiles(ScanPathItem(scanPaths, i), infoFileName);
 end;
+
+{ ////////////////// Adding, editing and removing games ////////////////// }
 
 { Write a game's details to its info file. Lines GameMinder doesn't use,
   such as comments, are kept. Returns false if it couldn't be written }
@@ -541,8 +573,43 @@ begin
   SuggestExec := best;
 end;
 
-{ Directories under scanPath with a program in but no info file - games that
-  could be added. Directories inside a game, or inside a found directory, are skipped }
+{ Best guess at a game's setup program, blank if none. INSTALL isn't suggested,
+  as in an installed game it usually installs it again }
+function SuggestSetup(dir:string):string;
+const
+  SetupCount = 5;
+  SetupNames: array[1..SetupCount] of string[8] = (
+    'SETUP', 'SETSOUND', 'SOUND', 'SETMAIN', 'CONFIG');
+var
+  S:SearchRec;
+  best,ext,name:string;
+  bestRank,i:integer;
+begin
+  best := '';
+  bestRank := SetupCount + 1;
+
+  FindFirst(NormalizeDir(dir) + AllFilesMask, ReadOnly + Hidden + Archive, S);
+  while ( DosError = 0 ) do begin
+    ext := FileExtension(S.Name);
+    name := UpStr(copy(S.Name, 1, length(S.Name) - length(ext) - 1));
+    if ( ext = 'EXE' ) or ( ext = 'COM' ) or ( ext = 'BAT' ) then
+      for i := 1 to SetupCount do
+        if ( pos(SetupNames[i], name) = 1 ) then
+          if ( i < bestRank ) or ( ( i = bestRank ) and ( CompareText(S.Name, best) < 0 ) ) then begin
+            best := S.Name;
+            bestRank := i;
+          end;
+    FindNext(S);
+  end;
+  {$IFDEF FPC}
+  FindClose(S);
+  {$ENDIF}
+
+  SuggestSetup := best;
+end;
+
+{ Directories under scanPath (a ; separated list) with a program in but no info file -
+  games that could be added. Directories inside a game, or inside a found directory, are skipped }
 procedure FindUnlistedDirs(scanPath:string; infoFileName:string; list:PStringCollection);
 
   procedure Walk(path:string; isRoot:boolean);
@@ -583,8 +650,11 @@ procedure FindUnlistedDirs(scanPath:string; infoFileName:string; list:PStringCol
     {$ENDIF}
   end;
 
+var
+  i:integer;
 begin
-  Walk(scanPath, true);
+  for i := 1 to ScanPathCount(scanPath) do
+    Walk(ScanPathItem(scanPath, i), true);
 end;
 
 { ////////////////// Cache ////////////////// }
@@ -619,7 +689,7 @@ begin
   {$I-}
   writeln(f, '; GameMinder game cache - delete this file or use Rescan to rebuild it');
   writeln(f, 'cache:', CacheVersion);
-  writeln(f, 'scanpath:', UpStr(NormalizeDir(scanPath)));
+  writeln(f, 'scanpath:', UpStr(NormalizeScanPaths(scanPath)));
   writeln(f, 'infofile:', UpStr(infoFileName));
 
   for i := 0 to GameList^.Count - 1 do begin
@@ -628,6 +698,7 @@ begin
     WriteField('path', game^.Path);
     WriteField('name', game^.Name);
     WriteField('exec', game^.Exec);
+    WriteField('setup', game^.Setup);
     WriteField('developer', game^.Developer);
     WriteField('year', game^.Year);
     WriteField('genre', game^.Genre);
@@ -637,6 +708,7 @@ begin
     if ( game^.MemoryKB > 0 ) then writeln(f, 'memory:', game^.MemoryKB);
     WriteField('before', game^.Before);
     WriteField('after', game^.After);
+    WriteField('notes', game^.Notes);
     WriteField('lastplayed', game^.LastPlayed);
     if ( game^.TimesPlayed > 0 ) then writeln(f, 'timesplayed:', game^.TimesPlayed);
     if ( game^.MinutesPlayed > 0 ) then writeln(f, 'minutesplayed:', game^.MinutesPlayed);
@@ -674,7 +746,7 @@ begin
       if ( game = nil ) and ( key <> 'PATH' ) then begin
         { Header }
         if ( key = 'CACHE' ) then valid := ( value = CacheVersion )
-        else if ( key = 'SCANPATH' ) then valid := valid and ( value = UpStr(NormalizeDir(scanPath)) )
+        else if ( key = 'SCANPATH' ) then valid := valid and ( value = UpStr(NormalizeScanPaths(scanPath)) )
         else if ( key = 'INFOFILE' ) then valid := valid and ( value = UpStr(infoFileName) );
       end
       else if not valid then
@@ -864,6 +936,41 @@ begin
   SessionMinutes[SessionCount] := minutes;
 end;
 
+{ Find the longest any game has been played, for PopularityLevel. Call after
+  loading games and when play stats change }
+procedure UpdatePopularity;
+var
+  i:integer;
+  game:PGame;
+begin
+  MostMinutesPlayed := 0;
+  if ( GameList = nil ) then exit;
+
+  for i := 0 to GameList^.Count - 1 do begin
+    game := GameList^.At(i);
+    if ( game^.MinutesPlayed > MostMinutesPlayed ) then
+      MostMinutesPlayed := game^.MinutesPlayed;
+  end;
+end;
+
+{ How much a game has been played compared to the most played game:
+  0 never played, 1 played, then 2, 3 and 4 (MaxPopularity) for at least a
+  32nd, an 8th and a half of the most played game's time }
+function PopularityLevel(game:PGame):byte;
+var
+  minutes:longint;
+begin
+  PopularityLevel := 0;
+  if ( game^.TimesPlayed = 0 ) and ( game^.MinutesPlayed = 0 ) then exit;
+
+  minutes := game^.MinutesPlayed;
+  if ( minutes = 0 ) or ( MostMinutesPlayed = 0 ) then PopularityLevel := 1
+  else if ( minutes * 2 >= MostMinutesPlayed ) then PopularityLevel := 4
+  else if ( minutes * 8 >= MostMinutesPlayed ) then PopularityLevel := 3
+  else if ( minutes * 32 >= MostMinutesPlayed ) then PopularityLevel := 2
+  else PopularityLevel := 1;
+end;
+
 begin
   GameList := nil;
   View := nil;
@@ -874,4 +981,5 @@ begin
   ShowScanProgress := false;
   SessionCount := 0;
   SessionEdits := 0;
+  MostMinutesPlayed := 0;
 end.

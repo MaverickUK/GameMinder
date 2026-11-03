@@ -4,9 +4,10 @@
 Usage:  make-testdata.py DRIVE_DIR [--edge-cases] [--bulk N]
 
 Writes DRIVE_DIR/GMIND/SETTINGS.TXT and DRIVE_DIR/GAMES/... with:
-  - 25 well known games, with metadata and a made up play history
+  - 25 well known games, with metadata, setup programs, notes and a made up play history
   - --edge-cases: games that exercise awkward info files, missing programs,
-    before/after commands, memory warnings, long names and so on (in GAMES/TESTS)
+    before/after commands, memory warnings, long names and so on (in GAMES/TESTS),
+    plus a second scan directory, EXTRA
   - --bulk N: N generated games (in GAMES/BULK), for scrolling and large lists
 
 Every game's program is a tiny stand-in (.COM image or .BAT) that shows the game's
@@ -102,7 +103,8 @@ def play_log(plays, minutes, rng):
     return '\n'.join(lines) + '\n'
 
 
-write(f'{c}/GMIND/SETTINGS.TXT', 'ScanPath:C:\\GAMES\nDelayOnStartup:1200\n')
+scan_path = 'C:\\GAMES;C:\\EXTRA' if args.edge_cases else 'C:\\GAMES'
+write(f'{c}/GMIND/SETTINGS.TXT', f'ScanPath:{scan_path}\nDelayOnStartup:1200\n')
 
 # ---- Well known games (also used for the README demo) ----
 
@@ -137,6 +139,11 @@ games = [
 
 shareware = {'KEEN1', 'KEEN4', 'DOOM', 'WOLF3D', 'JAZZ', 'TYRIAN', 'OMF'}
 memory = {'KEEN4': 520, 'DOOM': 560, 'XCOM': 590}
+setup = {'DOOM': 'SETUP.EXE', 'DOOM2': 'SETUP.EXE', 'DUKE3D': 'SETUP.EXE', 'HERETIC': 'SETUP.EXE',
+         'MONKEY2': 'SETSOUND.EXE', 'XCOM': 'SETSOUND.EXE', 'DUNE2': 'SETUP.EXE'}
+notes = {'MONKEY1': 'Set the Roland MT-32 up in SETSOUND first',
+         'CIV': 'Copy protection: look up the answers in the manual',
+         'AITD': 'Bought on holiday - still need to try it'}
 
 rng = random.Random(7)
 for d, name, exe, dev, year, genre, video, sound, plays, minutes in games:
@@ -144,6 +151,11 @@ for d, name, exe, dev, year, genre, video, sound, plays, minutes in games:
     info += 'type:Shareware\n' if d in shareware else 'type:Full\n'
     if d in memory:
         info += f'memory:{memory[d]}\n'
+    if d in setup:
+        info += f'setup:{setup[d]}\n'
+        add_stand_in(f'{c}/GAMES/{d}', f'{name} setup', setup[d])
+    if d in notes:
+        info += f'notes:{notes[d]}\n'
     add_game(d, info, name, exe, play_log(plays, minutes, rng) if plays else None)
 
 # A game with no !GM_INFO.TXT yet, for Add to find - it should suggest RAP.EXE, not SETUP.EXE
@@ -194,6 +206,17 @@ if args.edge_cases:
     # Characters from the DOS code page
     add_game(f'{t}/ACCENTS', 'name:Über Café Señor\nexec:ACCENTS.EXE\ndeveloper:Ñandú Ölf\ngenre:Test\ntype:Demo\n',
              'Uber Cafe Senor', 'ACCENTS.EXE')
+    # Setup program that isn't there
+    add_game(f'{t}/NOSETUP', 'name:Missing Setup Program\nexec:NOSETUP.EXE\nsetup:NOSUCH.EXE\ngenre:Test\ntype:Test\n',
+             'Missing Setup Program', 'NOSETUP.EXE')
+    # Notes too long for one line of the info panel
+    add_game(f'{t}/LONGNOTE',
+             'name:Long Notes\nexec:NOTES.EXE\ngenre:Test\ntype:Test\n'
+             'notes:Needs SETUP run for Sound Blaster on IRQ 5, then crashes on level 3 unless EMS is off\n',
+             'Long Notes', 'NOTES.EXE')
+    # In the second scan directory, C:\EXTRA
+    write(f'{c}/EXTRA/STARGUN/!GM_INFO.TXT', 'name:Stargunner\nexec:STARGUN.EXE\ngenre:Shooter\ntype:Freeware\n')
+    add_stand_in(f'{c}/EXTRA/STARGUN', 'Stargunner', 'STARGUN.EXE')
     # Program given with a full path, run from elsewhere
     add_game(f'{t}/FULLPATH', 'name:Program On Another Path\nexec:C:\\GAMES\\DOOM\\DOOM.EXE\ngenre:Test\ntype:Test\n',
              'Program On Another Path', 'C:\\GAMES\\DOOM\\DOOM.EXE')

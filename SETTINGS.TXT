@@ -2,7 +2,8 @@
 ; Lines starting with ; are comments. Format is Key:Value
 ; This file must be in the same directory as GAMEMIND.EXE
 
-; Directory to recursively search for games. Trailing \ is optional
+; Directory to recursively search for games. Trailing \ is optional.
+; List several separated by ; e.g. C:\GAMES;D:\GAMES
 ScanPath:C:\GAMES\
 
 ; Name of the file in each game directory describing the game
@@ -29,6 +30,10 @@ BlankLineFilter:
 
 ; Record when and for how long games are played, in !GM_LOG.TXT in each game directory
 EnablePlayStats:true
+
+; Show a shaded block by each game in the list for how much it's been played
+; compared to your most played game. Blank if never played. Needs EnablePlayStats
+PopularityIndicator:true
 
 ; Wait for a key press after a game exits, useful to read any error messages
 WaitForKeyAfterGame:false

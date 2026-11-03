@@ -49,7 +49,7 @@ make_drive() {
 #   Esc clears the filter, Sort menu > Developer, Esc back, Add (Ins) Raptor, type its
 #   developer and save (F10), Theme > Turbo, Commander, Mono and keep it, Esc exits
 #   to the end screen, which DX-CAPTURE keeps recording for 3 seconds
-keys="down down f1 , f3 , f2 f4 , f9 , f5 f2 k e e n , down , enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down a p o g e e , f10 , left left left left enter , right , right , right , enter , esc"
+keys="down down f1 , f3 , f2 f4 , f9 , f5 f2 k e e n , down , enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down down a p o g e e , f10 , left left left left enter , right , right , right , enter , esc"
 
 # DOSBox-X closes at the time limit, after the recording has finished. It sometimes crashes
 # while recording once a game has run (and always with -exit), so try a few times

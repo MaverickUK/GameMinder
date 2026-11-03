@@ -35,7 +35,10 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Sort by play stats: times played and total time played~~ (0.2.0)
 - ~~Config options: default sort mode and default display mode on startup~~ (0.2.0, `DefaultSort` and `DefaultView`)
 - ~~Config option: wait for a key press after a game exits~~ (0.2.0, `WaitForKeyAfterGame`)
-- Popularity indicator in the games list (a single shaded ASCII character, can be turned off in `SETTINGS.TXT`)
+- ~~Popularity indicator in the games list (a single shaded ASCII character, can be turned off in `SETTINGS.TXT`)~~ (unreleased, `PopularityIndicator`)
+- ~~Notes about each game~~ (unreleased, `notes:`)
+- ~~Run a game's setup program from GameMinder~~ (unreleased, `setup:` and Run > Setup)
+- ~~Search more than one directory for games~~ (unreleased, `ScanPath:C:\GAMES;D:\GAMES`)
 - ~~Automatically load the mouse driver for games that need a mouse~~ (0.3.0, `before:` and `after:` commands)
 - Config option: custom date/time formatting
 - Customise what the function keys (e.g. F5) do in `SETTINGS.TXT`

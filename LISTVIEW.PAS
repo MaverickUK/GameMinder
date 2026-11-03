@@ -53,6 +53,14 @@ begin
     HighlightRow := ( listMinRow + listMaxRow - 1 ) div 2;
 end;
 
+{ Shaded block showing how much a game has been played, blank if never }
+function PopularityChar(game:PGame):char;
+const
+  Shades: array[0..MaxPopularity] of char = (' ', #176, #177, #178, #219);
+begin
+  PopularityChar := Shades[PopularityLevel(game)];
+end;
+
 { Currently highlighted game, nil if the filter matches nothing }
 function HighlightedGame:PGame;
 begin
@@ -78,7 +86,10 @@ var
   gameIndex:integer;
   row:byte;
   nameWidth:byte;
+  popularity:boolean;
 begin
+  popularity := ShowPopularity and EnablePlayStats;
+
   nameWidth := columns div 2 - 4; { 3 columns + 1 left padding = 4}
   if ( Mode = ModeFullScreen ) then
     nameWidth := developerColumn - listStartColumn - 1;
@@ -117,11 +128,17 @@ begin
       else
         write(PadRight(BlankLineFilter, nameWidth + 1));
     end
-    else if ( Mode = ModeFullScreen ) then
-      write(PadColumn(PStr(game^.Name), developerColumn - listStartColumn),
-            PadColumn(PStr(game^.Developer), genreColumn - developerColumn),
+    else if ( Mode = ModeFullScreen ) then begin
+      if ( popularity ) then
+        write(PadColumn(PStr(game^.Name), developerColumn - listStartColumn - 2), PopularityChar(game), ' ')
+      else
+        write(PadColumn(PStr(game^.Name), developerColumn - listStartColumn));
+      write(PadColumn(PStr(game^.Developer), genreColumn - developerColumn),
             PadColumn(PStr(game^.Genre), yearColumn - genreColumn),
-            PadRight(PStr(game^.Year), columns - yearColumn))
+            PadRight(PStr(game^.Year), columns - yearColumn));
+    end
+    else if ( popularity ) then
+      write(PadColumn(PStr(game^.Name), nameWidth), PopularityChar(game))
     else
       write(PadRight(PStr(game^.Name), nameWidth + 1));
   end;
