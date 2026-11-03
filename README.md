@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/gameminder-logo.png" alt="GameMinder logo: the name in yellow script across a white grid on DOS blue, above &quot;The games launcher for DOS&quot;" width="400">
+</p>
+
 # GameMinder
 ## :video_game: A lightweight DOS games launcher to let you easily find and launch your games
 
@@ -14,7 +18,7 @@ GameMinder was created after I took a holiday in Summer 2022 with my [Toshiba Li
 
 Through these frustrations I decided to scratch this specific itch by creating a lightweight DOS games launcher which could store meta data about each of the games. This allows for games to be grouped by genre, released date or to just check if a particular game has been setup on your system.
 
-The UI is a tribute to [PathMinder](https://en.wikipedia.org/wiki/PathMinder) which is an DOS explorer utility I've fond memories of using whilst growing up.
+The UI is a tribute to [PathMinder](https://en.wikipedia.org/wiki/PathMinder) which is an DOS explorer utility I've fond memories of using whilst growing up. The logo is a nod to the grid and script lettering on the cover of PathMinder's manual, in the colours of GameMinder's Classic theme.
 
 GameMinder also keeps track on when you've played a specific game and for how long. This is used to provide you with statistics and allow sorting of your games by popularity.
 
