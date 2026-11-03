@@ -15,7 +15,9 @@ const
   MenuSort = 1;
   MenuFilter = 2;
   MenuTheme = 3; { Themes from THEMES.TXT, listed on the second row }
+  MenuRun = 4;   { Game or setup program, for games with a setup program }
   { Position of options in the primary menu, to return to from a sub-menu }
+  PrimaryRunIndex = 0;
   PrimaryFilterIndex = 1;
   PrimarySortIndex = 2;
   PrimaryThemeIndex = 7;
@@ -26,7 +28,8 @@ type
                  maSortName, maSortDeveloper, maSortYear, maSortGenre, maSortType,
                  maSortTimesPlayed, maSortTimePlayed,
                  maFilterType, maFilterClear,
-                 maThemeChoose);
+                 maThemeChoose,
+                 maRunGame, maRunSetup);
 
   TMenuItem = record
     Caption: string[10];
@@ -50,7 +53,9 @@ uses
     Utility,
     Prefs,
     Screen,
-    Themes;
+    Themes,
+    Games,
+    ListView;
 
 const
   PrimaryMenu: array[0..8] of TMenuItem = (
@@ -78,12 +83,17 @@ const
     (Caption:'Filter'; Hint:'Type to filter games by name or type, Backspace to edit'; Action:maFilterType),
     (Caption:'Clear'; Hint:'Clear current filter'; Action:maFilterClear));
 
+  RunMenu: array[0..1] of TMenuItem = (
+    (Caption:'Game'; Hint:'Run highlighted game'; Action:maRunGame),
+    (Caption:'Setup'; Hint:''; Action:maRunSetup)); { Hint shows the setup program }
+
 function MenuCount(menu:byte):byte;
 begin
   case menu of
     MenuSort: MenuCount := 7;
     MenuFilter: MenuCount := 2;
     MenuTheme: MenuCount := ThemeCount;
+    MenuRun: MenuCount := 2;
   else
     MenuCount := 9;
   end;
@@ -94,6 +104,7 @@ begin
   case menu of
     MenuSort: item := SortMenu[index];
     MenuFilter: item := FilterMenu[index];
+    MenuRun: item := RunMenu[index];
     MenuTheme: begin { Names are drawn by renderThemeRow }
       item.Caption := '';
       item.Hint := '';
@@ -196,7 +207,11 @@ begin
         item.Hint := 'Using Color settings - Enter to choose a theme'
       else
         item.Hint := 'Theme: ' + ThemeName(CurrentTheme) + ' - Enter to choose a theme';
-    end;
+    end
+    else if ( item.Action = maRun ) and HasSetup(HighlightedGame) then
+      item.Hint := 'Run highlighted game, or its setup program'
+    else if ( item.Action = maRunSetup ) and HasSetup(HighlightedGame) then
+      item.Hint := 'Run ' + PStr(HighlightedGame^.Setup) + ' to choose sound, video and controls';
     gotoxy(1,2);
     write(PadRight(item.Hint, columns));
   end;

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.7.0] - 2026-11-03
+
+### Added
+- `setup:` in `!GM_INFO.TXT` for a game's setup program, e.g. `setup:SETUP.EXE`. For these games **Run** opens a second menu, **Game** or **Setup**, so sound, video and controls can be set up from GameMinder. Running setup isn't counted as a play. **Add** suggests a setup program it finds (SETUP, SETSOUND, SOUND, SETMAIN or CONFIG)
+- `notes:` in `!GM_INFO.TXT` for anything to remember about a game, e.g. that it needs the CD in the drive. Notes are shown under the game's details (F2), and both fields are in the Add and Edit form
+- Popularity indicator: a shaded block after each game in the list showing how much it's been played compared to your most played game, from blank (never played) through ░ ▒ ▓ to █. `PopularityIndicator:false` in `SETTINGS.TXT` hides it
+- `ScanPath` can list several directories separated by `;`, e.g. `ScanPath:C:\GAMES;D:\GAMES`. Directories inside another listed directory are only searched once
+
 ## [0.6.1] - 2026-11-02
 
 ### Fixed

@@ -20,6 +20,9 @@ uses
     ListView,
     Runner;
 
+const
+  PanelTextWidth = columns div 2 - 2; { Panel width, less the space lines start with }
+
 procedure drawHelpPanel;
 begin
   resetLineDrawing(ColorBackground);
@@ -88,11 +91,12 @@ var
   drive:char;
   driveNumber:byte;
   total,free:longint;
-  currentDir:string;
+  currentDir,firstPath:string;
 begin
-  { Show the drive games are scanned from }
-  if ( length(ScanPath) >= 2 ) and ( ScanPath[2] = ':' ) then
-    drive := UpCase(ScanPath[1])
+  { Show the drive games are scanned from, the first one if there are several }
+  firstPath := ScanPathItem(ScanPath, 1);
+  if ( length(firstPath) >= 2 ) and ( firstPath[2] = ':' ) then
+    drive := UpCase(firstPath[1])
   else begin
     GetDir(0, currentDir);
     drive := UpCase(currentDir[1]);
@@ -131,6 +135,7 @@ procedure drawInfoPanel;
 var
   game:PGame;
   available:longint;
+  notes:string;
 begin
   game := HighlightedGame;
   resetLineDrawing(ColorBackground);
@@ -148,6 +153,11 @@ begin
   writeLine(' Genre: ' + PStr(game^.Genre), ColorText, ColorBackground );
   writeLine(' Year: ' + PStr(game^.Year), ColorText, ColorBackground );
   writeLine(' Type: ' + PStr(game^.GameType), ColorText, ColorBackground );
+  if ( game^.Notes <> nil ) then begin
+    notes := 'Notes: ' + PStr(game^.Notes);
+    while ( length(notes) > 0 ) do
+      writeLine(' ' + WrapText(notes, PanelTextWidth), ColorHeadingText, ColorBackground );
+  end;
   blankLine;
   writeLine(' Video: ' + PStr(game^.Video), ColorText, ColorBackground );
   writeLine(' Sound: ' + PStr(game^.Sound), ColorText, ColorBackground );
@@ -162,6 +172,8 @@ begin
   blankLine;
   writeLine(' Path: ' + PStr(game^.Path), ColorText, ColorBackground );
   writeLine(' Exec: ' + PStr(game^.Exec), ColorText, ColorBackground );
+  if ( game^.Setup <> nil ) then
+    writeLine(' Setup: ' + PStr(game^.Setup), ColorText, ColorBackground );
   if ( game^.Before <> nil ) then
     writeLine(' Before: ' + PStr(game^.Before), ColorText, ColorBackground );
   if ( game^.After <> nil ) then

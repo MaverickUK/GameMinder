@@ -173,6 +173,28 @@ begin
   CheckStr('SplitKeyValue long value', 'The Secret of Monkey Island Special Edition Collectors Box', value);
 end;
 
+procedure TestWrapText;
+var
+  text:string;
+begin
+  text := 'Needs the CD in the drive';
+  CheckStr('WrapText short', 'Needs the CD in the drive', WrapText(text, 30));
+  CheckStr('WrapText short takes it all', '', text);
+
+  text := 'Notes: Needs SETUP run for Sound Blaster, crashes on level 3';
+  CheckStr('WrapText breaks between words', 'Notes: Needs SETUP run for', WrapText(text, 28));
+  CheckStr('WrapText second line', 'Sound Blaster, crashes on', WrapText(text, 28));
+  CheckStr('WrapText last line', 'level 3', WrapText(text, 28));
+  CheckStr('WrapText done', '', text);
+
+  text := 'Supercalifragilistic expialidocious';
+  CheckStr('WrapText breaks a long word', 'Supercalif', WrapText(text, 10));
+  CheckStr('WrapText after a long word', 'ragilistic', WrapText(text, 10));
+
+  text := 'Exactly ten';
+  CheckStr('WrapText space at width', 'Exactly', WrapText(text, 10));
+end;
+
 procedure TestPaths;
 begin
   CheckStr('NormalizeDir adds separator', 'C:\GAMES' + PathSep, NormalizeDir('C:\GAMES'));
@@ -188,6 +210,19 @@ begin
   CheckStr('DirOfPath no dir', '', DirOfPath('GAMEMIND.EXE'));
   CheckStr('FileExtension', 'BAT', FileExtension('dune.bat'));
   CheckStr('FileExtension none', '', FileExtension('C:\GAMES.DIR\RUN'));
+
+  CheckInt('ScanPathCount one', 1, ScanPathCount('C:\GAMES'));
+  CheckInt('ScanPathCount several, ignoring blanks', 2, ScanPathCount(' C:\GAMES ;; D:\ ;'));
+  CheckInt('ScanPathCount blank', 0, ScanPathCount(''));
+  CheckStr('ScanPathItem first', 'C:\GAMES' + PathSep, ScanPathItem('C:\GAMES;D:\', 1));
+  CheckStr('ScanPathItem skips blanks', 'D:\', ScanPathItem(';C:\GAMES;;D:\', 2));
+  CheckStr('ScanPathItem out of range', '', ScanPathItem('C:\GAMES', 2));
+  CheckStr('NormalizeScanPaths one', 'C:\GAMES' + PathSep, NormalizeScanPaths('C:\GAMES'));
+  CheckStr('NormalizeScanPaths several', 'C:\GAMES\;D:\DOS\', NormalizeScanPaths(' C:\GAMES\ ; ;D:\DOS\'));
+  CheckStr('NormalizeScanPaths drops repeats', 'C:\GAMES\;D:\', NormalizeScanPaths('C:\GAMES\;D:\;c:\games\'));
+  CheckStr('NormalizeScanPaths drops directories inside another', 'C:\GAMES\;D:\',
+    NormalizeScanPaths('C:\GAMES\DOS\;C:\GAMES\;D:\;D:\OLD\'));
+  CheckStr('NormalizeScanPaths keeps similar names', 'C:\GAMES\;C:\GAMES2\', NormalizeScanPaths('C:\GAMES\;C:\GAMES2\'));
 end;
 
 { ////////////////// Config ////////////////// }
@@ -339,6 +374,16 @@ begin
     CheckStr('LoadInfoFile after', 'C:\MOUSE\MOUSE OFF', PStr(game^.After));
   end;
 
+  game := LoadInfoFile(Fixtures + 'GAMES' + PathSep + 'ACTION' + PathSep + 'DOOM' + PathSep, '!GM_INFO.TXT');
+  CheckBool('LoadInfoFile Doom', true, game <> nil);
+  if ( game <> nil ) then begin
+    CheckStr('LoadInfoFile setup', 'SETUP.EXE', PStr(game^.Setup));
+    CheckStr('LoadInfoFile notes', 'Needs a mouse - load it before starting GameMinder', PStr(game^.Notes));
+    CheckBool('HasSetup', true, HasSetup(game));
+    DisposeGame(game);
+  end;
+  CheckBool('HasSetup nil game', false, HasSetup(nil));
+
   game := LoadInfoFile(Fixtures + 'GAMES' + PathSep + 'NONAME', '!GM_INFO.TXT');
   CheckBool('LoadInfoFile without name', true, game <> nil);
   if ( game <> nil ) then
@@ -399,6 +444,14 @@ begin
   CheckInt('Filter survives sort', 0, ViewCount);
   ApplyFilter('');
   CheckInt('Clear filter', 4, ViewCount);
+
+  { Several scan paths }
+  InitGames(DefaultMaxGames);
+  ScanForGames(Fixtures + 'GAMES;' + Fixtures + 'SINGLE', '!GM_INFO.TXT');
+  CheckInt('ScanForGames several paths', 5, GameCount);
+  InitGames(DefaultMaxGames);
+  ScanForGames(NormalizeScanPaths(Fixtures + 'GAMES;' + Fixtures + 'GAMES' + PathSep + 'ACTION'), '!GM_INFO.TXT');
+  CheckInt('ScanForGames nested path not scanned twice', 4, GameCount);
 
   { Single game - v0.1.x sort overran the stack here (Tiny Llama crash) }
   InitGames(DefaultMaxGames);
@@ -498,6 +551,8 @@ begin
   CheckStr('LoadGameCache last played', '2022/09/06 23:50', PStr(game^.LastPlayed));
   game := ViewGame(1);
   CheckStr('LoadGameCache arguments', 'DOOM.EXE -nomonsters', PStr(game^.Exec));
+  CheckStr('LoadGameCache setup', 'SETUP.EXE', PStr(game^.Setup));
+  CheckStr('LoadGameCache notes', 'Needs a mouse - load it before starting GameMinder', PStr(game^.Notes));
   game := ViewGame(2);
   CheckStr('LoadGameCache before', 'C:\MOUSE\MOUSE.COM', PStr(game^.Before));
 
@@ -506,6 +561,17 @@ begin
   CheckInt('LoadGameCache different scan path is empty', 0, GameCount);
   CheckBool('LoadGameCache different info file', false, LoadGameCache(CacheFile, scanPath, 'GAME.TXT'));
   CheckBool('LoadGameCache scan path case-insensitive', true, LoadGameCache(CacheFile, UpStr(scanPath), '!gm_info.txt'));
+
+  { Several scan paths }
+  scanPath := Fixtures + 'GAMES;' + Fixtures + 'SINGLE';
+  InitGames(DefaultMaxGames);
+  ScanForGames(scanPath, '!GM_INFO.TXT');
+  CheckBool('SaveGameCache several paths', true, SaveGameCache(CacheFile, scanPath, '!GM_INFO.TXT'));
+  InitGames(DefaultMaxGames);
+  CheckBool('LoadGameCache several paths', true, LoadGameCache(CacheFile, scanPath + ';', '!GM_INFO.TXT'));
+  CheckInt('LoadGameCache several paths count', 5, GameCount);
+  InitGames(DefaultMaxGames);
+  CheckBool('LoadGameCache a scan path removed', false, LoadGameCache(CacheFile, Fixtures + 'GAMES', '!GM_INFO.TXT'));
 
   Assign(f, CacheFile);
   Erase(f);
@@ -567,6 +633,26 @@ begin
   game := LoadInfoFile(path, '!GM_INFO.TXT');
   CheckStr('SaveInfoFile round trip', 'Commander Keen', PStr(game^.Name));
 
+  SetGameField(game, 'SETUP', 'SETUP.EXE');
+  SetGameField(game, 'NOTES', 'Use joystick: notes can have colons');
+  CheckBool('SaveInfoFile setup and notes', true, SaveInfoFile(game, '!GM_INFO.TXT'));
+  Reset(f);
+  lines := 0;
+  while not Eof(f) do begin
+    readln(f, line);
+    inc(lines);
+    case lines of
+      7: CheckStr('SaveInfoFile adds setup', 'setup:SETUP.EXE', line);
+      8: CheckStr('SaveInfoFile adds notes', 'notes:Use joystick: notes can have colons', line);
+    end;
+  end;
+  Close(f);
+  CheckInt('SaveInfoFile setup and notes line count', 8, lines);
+  game := LoadInfoFile(path, '!GM_INFO.TXT');
+  CheckStr('SaveInfoFile notes round trip', 'Use joystick: notes can have colons', PStr(game^.Notes));
+  CheckInt('InfoFieldIndex', 3, InfoFieldIndex('SETUP'));
+  CheckInt('InfoFieldIndex unknown', 0, InfoFieldIndex('RATING'));
+
   { New game with no info file yet }
   Erase(f);
   CheckBool('SaveInfoFile new file', true, SaveInfoFile(game, '!GM_INFO.TXT'));
@@ -612,6 +698,27 @@ begin
   DoneGames;
 
   SessionCount := 0;
+  { Popularity, compared to the most played game }
+  InitGames(10);
+  AddGame(MakeGame('Civ', '', '', 12, 3200));
+  AddGame(MakeGame('Doom', '', '', 5, 1600));
+  AddGame(MakeGame('Keen', '', '', 2, 400));
+  AddGame(MakeGame('Dune', '', '', 1, 100));
+  AddGame(MakeGame('Quick', '', '', 3, 0));
+  AddGame(MakeGame('Never', '', '', 0, 0));
+  UpdatePopularity;
+  CheckInt('UpdatePopularity most minutes', 3200, MostMinutesPlayed);
+  SortGames(smName);
+  ApplyFilter('Civ');   CheckInt('PopularityLevel most played', MaxPopularity, PopularityLevel(ViewGame(0)));
+  ApplyFilter('Doom');  CheckInt('PopularityLevel half', 4, PopularityLevel(ViewGame(0)));
+  ApplyFilter('Keen');  CheckInt('PopularityLevel eighth', 3, PopularityLevel(ViewGame(0)));
+  ApplyFilter('Dune');  CheckInt('PopularityLevel 32nd', 2, PopularityLevel(ViewGame(0)));
+  ApplyFilter('Quick'); CheckInt('PopularityLevel played under a minute', 1, PopularityLevel(ViewGame(0)));
+  ApplyFilter('Never'); CheckInt('PopularityLevel never played', 0, PopularityLevel(ViewGame(0)));
+  DoneGames;
+  UpdatePopularity;
+  CheckInt('UpdatePopularity no games', 0, MostMinutesPlayed);
+
   RecordSessionPlay('Doom', 10);
   RecordSessionPlay('Keen', 0);
   RecordSessionPlay('Doom', 5);
@@ -643,6 +750,10 @@ begin
   CheckStr('SuggestExec batch file', 'RUN.BAT', SuggestExec(root + 'BATONLY'));
   CheckStr('SuggestExec only setup', '', SuggestExec(root + 'INSTONLY'));
   CheckStr('SuggestExec no programs', '', SuggestExec(root + 'NOPROG'));
+  CheckStr('SuggestSetup prefers SETUP', 'SETUP.EXE', SuggestSetup(root + 'NEWGAME'));
+  CheckStr('SuggestSetup SETSOUND batch file', 'SETSOUND.BAT', SuggestSetup(root + 'BATONLY'));
+  CheckStr('SuggestSetup not INSTALL', '', SuggestSetup(root + 'INSTONLY'));
+  CheckStr('SuggestSetup none', '', SuggestSetup(root + 'NOPROG'));
 
   list := New(PStringCollection, Init(10, 10));
   FindUnlistedDirs(root, '!GM_INFO.TXT', list);
@@ -653,6 +764,14 @@ begin
     CheckStr('FindUnlistedDirs setup only', root + 'INSTONLY' + PathSep, PString(list^.At(2))^);
     CheckStr('FindUnlistedDirs 4', root + 'NEWGAME' + PathSep, PString(list^.At(3))^);
   end;
+  Dispose(list, Done);
+
+  list := New(PStringCollection, Init(10, 10));
+  FindUnlistedDirs(root + 'GROUP;' + root + 'NEWGAME', '!GM_INFO.TXT', list);
+  { Each path is searched, but a scan path itself isn't offered as a game }
+  CheckInt('FindUnlistedDirs several paths', 1, list^.Count);
+  if ( list^.Count = 1 ) then
+    CheckStr('FindUnlistedDirs several paths', root + 'GROUP' + PathSep + 'INNER' + PathSep, PString(list^.At(0))^);
   Dispose(list, Done);
 end;
 
@@ -712,6 +831,7 @@ begin
 
   TestTimes;
   TestStrings;
+  TestWrapText;
   TestPaths;
   TestConfig;
   TestSaveConfig;

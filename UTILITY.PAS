@@ -45,8 +45,12 @@ function TitleCase(s:string):string;
 function CompareText(a,b:string):integer;
 function ContainsText(haystack,needle:string):boolean;
 function SplitKeyValue(line:string; var key:string; var value:string):boolean;
+function WrapText(var text:string; width:byte):string;
 { Paths }
 function NormalizeDir(path:string):string;
+function ScanPathCount(paths:string):integer;
+function ScanPathItem(paths:string; index:integer):string;
+function NormalizeScanPaths(paths:string):string;
 function StripTrailingSlash(path:string):string;
 function DirOfPath(path:string):string;
 function FileExtension(fileName:string):string;
@@ -345,6 +349,29 @@ begin
   SplitKeyValue := true;
 end;
 
+{ Take the first line of up to width characters off text, breaking between words
+  where possible. Call until text is empty to wrap all of it }
+function WrapText(var text:string; width:byte):string;
+var
+  i:byte;
+begin
+  text := Trim(text);
+  if ( length(text) <= width ) then begin
+    WrapText := text;
+    text := '';
+    exit;
+  end;
+
+  { Last space that leaves a line short enough, otherwise break the word }
+  i := width + 1;
+  while ( i > 1 ) and ( text[i] <> ' ' ) do
+    dec(i);
+  if ( i <= 1 ) then i := width + 1;
+
+  WrapText := Trim(copy(text, 1, i - 1));
+  text := Trim(copy(text, i, 255));
+end;
+
 { ////////////////// Paths ////////////////// }
 
 { Ensure a directory ends with a separator e.g. C:\GAMES -> C:\GAMES\ }
@@ -354,6 +381,75 @@ begin
   if ( length(path) > 0 ) and not ( path[length(path)] in ['\', '/'] ) then
     path := path + PathSep;
   NormalizeDir := path;
+end;
+
+{ ScanPath can list several directories separated by ; e.g. C:\GAMES;D:\GAMES }
+
+{ Number of directories in a ; separated list, ignoring blanks }
+function ScanPathCount(paths:string):integer;
+var
+  count:integer;
+begin
+  count := 0;
+  while ( length(ScanPathItem(paths, count + 1)) > 0 ) do
+    inc(count);
+  ScanPathCount := count;
+end;
+
+{ Directory from a ; separated list, counting from 1, with a trailing separator.
+  Blank if there isn't one }
+function ScanPathItem(paths:string; index:integer):string;
+var
+  semicolon:byte;
+  item:string;
+begin
+  ScanPathItem := '';
+  while ( length(paths) > 0 ) do begin
+    semicolon := pos(';', paths);
+    if ( semicolon = 0 ) then semicolon := length(paths) + 1;
+    item := NormalizeDir(copy(paths, 1, semicolon - 1));
+    delete(paths, 1, semicolon);
+
+    if ( length(item) > 0 ) then begin
+      dec(index);
+      if ( index = 0 ) then begin
+        ScanPathItem := item;
+        exit;
+      end;
+    end;
+  end;
+end;
+
+{ Tidy a ScanPath list: each directory ends with a separator, and blanks,
+  repeats and directories inside another listed directory are dropped,
+  so no game is found twice }
+function NormalizeScanPaths(paths:string):string;
+var
+  i,j,count:integer;
+  item,other,result_:string;
+  keep:boolean;
+begin
+  result_ := '';
+  count := ScanPathCount(paths);
+
+  for i := 1 to count do begin
+    item := ScanPathItem(paths, i);
+    keep := true;
+    for j := 1 to count do
+      if ( j <> i ) then begin
+        other := ScanPathItem(paths, j);
+        { Inside another directory, or a repeat of an earlier one }
+        if ( pos(UpStr(other), UpStr(item)) = 1 ) and
+           ( ( length(other) < length(item) ) or ( j < i ) ) then keep := false;
+      end;
+
+    if ( keep ) then begin
+      if ( length(result_) > 0 ) then result_ := result_ + ';';
+      result_ := result_ + item;
+    end;
+  end;
+
+  NormalizeScanPaths := result_;
 end;
 
 { Remove a trailing separator so the path can be passed to ChDir,

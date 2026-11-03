@@ -33,7 +33,7 @@ var
   ExeDir:string; { Directory GAMEMIND.EXE was run from, with trailing separator }
 
   { User configurable settings }
-  ScanPath:string[70];
+  ScanPath:string; { One or more directories separated by ; e.g. C:\GAMES;D:\GAMES }
   InfoFileName:string[12];
   HighlightedRow:word; { 0 = middle of the list }
   ScreenLines:word;    { 25, or 50 (43 on EGA) with GAMEMIND /50 }
@@ -42,6 +42,7 @@ var
   BlankLineFilter:string[30];
   UseEmsForSwapFile:boolean;
   EnablePlayStats:boolean;
+  ShowPopularity:boolean; { Shaded block by each game showing how much it's been played }
   WaitForKeyAfterGame:boolean;
   CacheGames:boolean;
   ExitScreen:boolean; { Show the end screen with session stats on exit }
@@ -90,7 +91,7 @@ end;
 procedure LoadSettings;
 begin
   VerboseOutput := GetConfigBool('VerboseOutput', false);
-  ScanPath := NormalizeDir(GetConfigString('ScanPath', 'C:\GAMES\'));
+  ScanPath := NormalizeScanPaths(GetConfigString('ScanPath', 'C:\GAMES\'));
   InfoFileName := GetConfigString('InfoFileName', '!GM_INFO.TXT');
   HighlightedRow := GetConfigInt('HighlightedRow', 0);
   DelayAfterGameExit := GetConfigInt('DelayAfterGameExit', 0);
@@ -98,6 +99,7 @@ begin
   BlankLineFilter := GetConfigString('BlankLineFilter', '');
   UseEmsForSwapFile := GetConfigBool('UseEmsForSwapFile', true);
   EnablePlayStats := GetConfigBool('EnablePlayStats', true);
+  ShowPopularity := GetConfigBool('PopularityIndicator', true);
   WaitForKeyAfterGame := GetConfigBool('WaitForKeyAfterGame', false);
   CacheGames := GetConfigBool('CacheGames', true);
   ExitScreen := GetConfigBool('ExitScreen', true);

@@ -3,3 +3,5 @@ exec:DOOM.EXE -nomonsters
 developer:id software
 genre:FPS
 year:1993
+setup:SETUP.EXE
+notes:Needs a mouse - load it before starting GameMinder

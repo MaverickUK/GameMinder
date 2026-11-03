@@ -49,22 +49,26 @@ end;
   Returns true if the games came from the cache. A scan shows its progress
   as [....] when ShowScanProgress is set }
 function LoadGames(scan:boolean):boolean;
+var
+  cached:boolean;
 begin
-  LoadGames := false;
   InitGames(MaxGames);
   PlayStatsEnabled := EnablePlayStats;
 
+  cached := false;
   if not scan and CacheGames then
-    if LoadGameCache(ExeDir + CacheFileName, ScanPath, InfoFileName) and ( GameCount > 0 ) then begin
-      LoadGames := true;
-      exit;
-    end;
+    cached := LoadGameCache(ExeDir + CacheFileName, ScanPath, InfoFileName) and ( GameCount > 0 );
 
-  InitGames(MaxGames);
-  if ( ShowScanProgress ) then write('Scanning ', ScanPath, ' [');
-  ScanForInfoFiles(ScanPath, InfoFileName);
-  if ( ShowScanProgress ) then writeln(']');
-  if ( GameCount > 0 ) then SaveCache;
+  if not cached then begin
+    InitGames(MaxGames);
+    if ( ShowScanProgress ) then write('Scanning ', ScanPath, ' [');
+    ScanForGames(ScanPath, InfoFileName);
+    if ( ShowScanProgress ) then writeln(']');
+    if ( GameCount > 0 ) then SaveCache;
+  end;
+
+  UpdatePopularity;
+  LoadGames := cached;
 end;
 
 { ////////////////// Screen ////////////////// }
@@ -144,8 +148,26 @@ begin
   game := HighlightedGame;
   if ( game = nil ) then exit;
 
-  if ( LaunchGame(game, true) <> LaunchCancelled ) then
+  if ( LaunchGame(game, true) <> LaunchCancelled ) then begin
+    UpdatePopularity;
     SaveCache; { Updated play stats }
+  end;
+
+  { Restart Gameminder UI }
+  ApplyScreenMode;
+  HideCursor;
+  RedrawAll;
+end;
+
+{ Run the selected game's setup program }
+procedure ExecuteSetup;
+var
+  game:PGame;
+begin
+  game := HighlightedGame;
+  if not HasSetup(game) then exit;
+
+  LaunchSetup(game, true);
 
   { Restart Gameminder UI }
   ApplyScreenMode;
@@ -234,6 +256,7 @@ begin
       game^.Name := NewStr(TitleCase(copy(StripTrailingSlash(dir),
                       length(DirOfPath(StripTrailingSlash(dir))) + 1, 255)));
       game^.Exec := NewStr(SuggestExec(dir));
+      game^.Setup := NewStr(SuggestSetup(dir));
 
       if not EditGameForm(game, 'Add game') then
         DisposeGame(game)
@@ -245,6 +268,7 @@ begin
         ShowMessage('Saved, but GameMinder already lists MaxGames games')
       else begin
         if ( PlayStatsEnabled ) then LoadPlayStats(game);
+        UpdatePopularity;
         inc(SessionEdits);
         SortGames(CurrentSort);
         ShowGame(game);
@@ -268,6 +292,7 @@ begin
   if Confirm('Remove ' + PStr(game^.Name) + ' from GameMinder? Its files are kept') then begin
     if DeleteInfoFile(game, InfoFileName) then begin
       RemoveGame(game);
+      UpdatePopularity;
       scrollTo(offset);
       SaveCache;
     end else
@@ -591,7 +616,10 @@ begin
 
             case item.Action of
               { --- Primary --- }
-              maRun: ExecuteGame;
+              maRun: if HasSetup(HighlightedGame) then
+                       showMenu(MenuRun, 0)
+                     else
+                       ExecuteGame;
               maSortMenu: showMenu(MenuSort, ord(CurrentSort));
               maFilterMenu: showMenu(MenuFilter, 0);
               maAdd: AddNewGame;
@@ -612,6 +640,15 @@ begin
               maFilterClear: SetFilter('');
               { --- Theme --- }
               maThemeChoose: KeepTheme;
+              { --- Run --- }
+              maRunGame: begin
+                  showMenu(MenuPrimary, PrimaryRunIndex);
+                  ExecuteGame;
+                end;
+              maRunSetup: begin
+                  showMenu(MenuPrimary, PrimaryRunIndex);
+                  ExecuteSetup;
+                end;
             end;
         end;
     #27: begin { Esc - clear filter, then go up a menu, then exit }
@@ -623,6 +660,8 @@ begin
           showMenu(MenuPrimary, PrimaryFilterIndex)
         else if ( hMenu = MenuTheme ) then
           CancelTheme
+        else if ( hMenu = MenuRun ) then
+          showMenu(MenuPrimary, PrimaryRunIndex)
         else
           runMainLoop := false;
       end;
@@ -638,6 +677,10 @@ begin
 
     { Redraw routines after input }
     if not runMainLoop then break;
+
+    { The Run menu is only for games with a setup program }
+    if ( hMenu = MenuRun ) and not HasSetup(HighlightedGame) then
+      showMenu(MenuPrimary, PrimaryRunIndex);
 
     { Entering or leaving full screen mode changes the frame }
     if ( previousMode <> Mode ) and
