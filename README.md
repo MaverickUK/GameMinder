@@ -50,3 +50,9 @@ Helpful resources used in the creation of GameMinder
 * [Keyboard scan codes](https://www.freepascal.org/docs-html/rtl/keyboard/kbdscancode.html)
 * [Pascal programming](https://www.tutorialspoint.com/pascal/)
 * [Pascal runtime error codes](https://there10han.wordpress.com/programming/pascal/free-pascal-exitcoderuntime-error-code/)
+
+---
+
+<p align="center">
+  <img src="docs/gameminder-banner.png" alt="GameMinder banner: the name in yellow script across a white grid on DOS blue, beside &quot;The games launcher for DOS&quot;" width="100%">
+</p>
