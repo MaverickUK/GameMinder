@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
-## [Unreleased]
+## [0.7.0] - 2026-11-03
 
 ### Added
 - `setup:` in `!GM_INFO.TXT` for a game's setup program, e.g. `setup:SETUP.EXE`. For these games **Run** opens a second menu, **Game** or **Setup**, so sound, video and controls can be set up from GameMinder. Running setup isn't counted as a play. **Add** suggests a setup program it finds (SETUP, SETSOUND, SOUND, SETMAIN or CONFIG)

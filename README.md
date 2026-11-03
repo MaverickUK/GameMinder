@@ -6,7 +6,7 @@
 
 [![GameMinder demo: browsing, sorting, filtering and launching games](docs/gameminder-demo.gif)](docs/gameminder-demo.mp4)
 
-*GameMinder v0.6.0 in DOSBox-X: the startup screen, help, system status, full screen view, sorting, type-to-filter, launching a game from a batch file with play stats updated on return, adding a new game, choosing a colour theme, and the end screen on exit. [Watch as MP4](docs/gameminder-demo.mp4).*
+*GameMinder v0.7.0 in DOSBox-X: the startup screen, a game's notes, help, system status, full screen view with how much each game has been played, sorting, type-to-filter, launching a game from a batch file with play stats updated on return, adding a new game, choosing a colour theme, and the end screen on exit. [Watch as MP4](docs/gameminder-demo.mp4).*
 
 [Watch demo of GameMinder running on a 386 on YouTube](https://www.youtube.com/watch?v=UGUtVTo1mUQ&list=PL10dNdIzl6W1UniVHwAFTED-wT_Ckrucw&index=7)
 
@@ -23,7 +23,7 @@ GameMinder also keeps track on when you've played a specific game and for how lo
 ## :rocket: [Quick start](QUICKSTART.md)
 
 1. Download the latest zip from [Releases](https://github.com/MaverickUK/GameMinder/releases) and copy `GAMEMIND.EXE` and `SETTINGS.TXT` to your DOS machine
-2. Copy `THEMES.TXT` too if you'd like colour themes, then set `ScanPath` in `SETTINGS.TXT` to your games directory
+2. Copy `THEMES.TXT` too if you'd like colour themes, then set `ScanPath` in `SETTINGS.TXT` to your games directory (or several, separated by `;`)
 3. Add a `!GM_INFO.TXT` file to each game's directory, e.g. `name:Commander Keen 1` and `exec:keen1.exe`
 4. Run `GAMEMIND`
 

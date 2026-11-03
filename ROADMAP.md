@@ -27,7 +27,7 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Colour themes, chosen from the menu~~ (0.4.0, `THEMES.TXT`)
 - ~~Find game directories without an info file~~ (0.5.0, Add)
 - Configure which columns are shown in half and full screen mode, and their widths, in `SETTINGS.TXT`
-- ASCII splash screen on exit
+- ~~ASCII splash screen on exit~~ (0.6.0, end screen)
 
 ## Next (planned)
 
@@ -35,10 +35,10 @@ Ideas and bug reports are welcome on [GitHub issues](https://github.com/Maverick
 - ~~Sort by play stats: times played and total time played~~ (0.2.0)
 - ~~Config options: default sort mode and default display mode on startup~~ (0.2.0, `DefaultSort` and `DefaultView`)
 - ~~Config option: wait for a key press after a game exits~~ (0.2.0, `WaitForKeyAfterGame`)
-- ~~Popularity indicator in the games list (a single shaded ASCII character, can be turned off in `SETTINGS.TXT`)~~ (unreleased, `PopularityIndicator`)
-- ~~Notes about each game~~ (unreleased, `notes:`)
-- ~~Run a game's setup program from GameMinder~~ (unreleased, `setup:` and Run > Setup)
-- ~~Search more than one directory for games~~ (unreleased, `ScanPath:C:\GAMES;D:\GAMES`)
+- ~~Popularity indicator in the games list (a single shaded ASCII character, can be turned off in `SETTINGS.TXT`)~~ (0.7.0, `PopularityIndicator`)
+- ~~Notes about each game~~ (0.7.0, `notes:`)
+- ~~Run a game's setup program from GameMinder~~ (0.7.0, `setup:` and Run > Setup)
+- ~~Search more than one directory for games~~ (0.7.0, `ScanPath:C:\GAMES;D:\GAMES`)
 - ~~Automatically load the mouse driver for games that need a mouse~~ (0.3.0, `before:` and `after:` commands)
 - Config option: custom date/time formatting
 - Customise what the function keys (e.g. F5) do in `SETTINGS.TXT`

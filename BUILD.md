@@ -99,7 +99,7 @@ scripts/testbed.sh --bulk 1000   # with 1,000 more games
 scripts/testbed.sh --exe build/dos/GAMEMIND.EXE   # a Free Pascal build, e.g. from CI
 ```
 
-The test drive is created in `build/testbed/c` by [scripts/make-testdata.py](scripts/make-testdata.py): 25 well-known games with play history, plus edge cases in `C:\GAMES\TESTS` (no name, long names, a missing program, no `exec:`, `before:`/`after:`, a memory warning, arguments, an untidy info file, an odd play log, deep nesting, accented names). Every game has a stand-in program that waits for a key, so games can be launched and their play stats recorded.
+The test drive is created in `build/testbed/c` by [scripts/make-testdata.py](scripts/make-testdata.py): 25 well-known games with play history, some with setup programs and notes, plus edge cases in `C:\GAMES\TESTS` (no name, long names, a missing program, a missing setup program, long notes, no `exec:`, `before:`/`after:`, a memory warning, arguments, an untidy info file, an odd play log, deep nesting, accented names) and a second scan directory, `C:\EXTRA`. Every game has a stand-in program that waits for a key, so games can be launched and their play stats recorded.
 
 In DOSBox-X, `S:` is this repository. After editing the source, type `B` to rebuild and run GameMinder, e.g. `B /50`. Each run of the script starts with a fresh test drive; use `--keep` to carry on with the last one. Turbo Pascal is looked for in `C:\TPWDB` - set `TP_DIR` if it's elsewhere. See `scripts/testbed.sh --help` for all the options.
 
