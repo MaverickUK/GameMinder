@@ -21,7 +21,8 @@ uses
     Games,
     Screen,
     ListView,
-    Runner;
+    Runner,
+    MemMap;
 
 const
   PanelTextWidth = columns div 2 - 2; { Panel width, less the space lines start with }
@@ -43,7 +44,8 @@ begin
   writeLine(' Ins    Add game     Del  Remove game', ColorText, ColorBackground);
   blankLine;
   writeLine(' F1 Help            F2 Game info', ColorText, ColorBackground);
-  writeLine(' F3 Status          F4 Full screen', ColorText, ColorBackground);
+  writeLine(' F3 Status          F4 Memory map', ColorText, ColorBackground);
+  writeLine(' Press F1-F4 again for full screen', ColorText, ColorBackground);
   blankLine;
   writeLine(' F5 Sort by name    F6 Sort by dev', ColorText, ColorBackground);
   writeLine(' F7 Sort by year    F8 Sort by genre', ColorText, ColorBackground);
@@ -182,6 +184,53 @@ begin
   blankRemainingLines;
 end;
 
+{ Memory in KB for the memory map, rounded up so small drivers show, blank if none }
+function MapKB(bytes:longint; width:byte):string;
+var
+  text:string;
+begin
+  if ( bytes = 0 ) then text := '' else text := ConvertToString(( bytes + 1023 ) div 1024);
+  while ( length(text) < width ) do text := ' ' + text;
+  MapKB := text;
+end;
+
+{ What's loaded in conventional (low) and upper (high) memory }
+procedure drawMemoryPanel;
+const
+  LinesBeforeList = 6;
+var
+  i, listRows, shown:integer;
+begin
+  ScanMemory;
+  resetLineDrawing(ColorBackground);
+
+  writeLine(' Memory Map', ColorHeadingText, ColorHeadingBackground );
+  writeLine(' Low  ' + MemoryMapBar(0, LowEndSeg, PanelTextWidth - 6), ColorText, ColorBackground );
+  if ( HasUpperMemory ) then
+    writeLine(' High ' + MemoryMapBar(LowEndSeg, $10000, PanelTextWidth - 6), ColorText, ColorBackground )
+  else
+    writeLine(' High No upper memory blocks', ColorText, ColorBackground );
+  writeLine(' ' + #178 + ' DOS   ' + #177 + ' Programs   ' + #176 + ' Free', ColorText, ColorBackground );
+  blankLine;
+  writeLine(' ' + PadRight('Name', 14) + '  Low KB  High KB', ColorHeadingText, ColorBackground );
+
+  { Leave a row for free memory, and one to say if some didn't fit }
+  listRows := FrameBottom - panelTop - LinesBeforeList - 1;
+  shown := MemEntryCount;
+  if ( shown > listRows ) then shown := listRows - 1;
+
+  for i := 1 to shown do
+    writeLine(' ' + PadRight(MemEntries[i].Name, 14) + MapKB(MemEntries[i].LowBytes, 8)
+              + MapKB(MemEntries[i].HighBytes, 9), ColorText, ColorBackground );
+  if ( shown < MemEntryCount ) then
+    writeLine(' ...and ' + ConvertToString(MemEntryCount - shown) + ' more', ColorText, ColorBackground );
+
+  writeLine(' ' + PadRight('Free', 14) + MapKB(FreeLowBytes, 8) + MapKB(FreeHighBytes, 9),
+            ColorHeadingText, ColorBackground );
+
+  blankRemainingLines;
+end;
+
 procedure drawInfoPanel;
 var
   game:PGame;
@@ -251,6 +300,7 @@ begin
     ModeHelp: drawHelpPanel;
     ModeInfo: drawInfoPanel;
     ModeStatus: drawSystemStatus;
+    ModeMemory: drawMemoryPanel;
     { ModeFullScreen: games list uses whole screen }
   end;
 end;

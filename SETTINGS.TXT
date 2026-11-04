@@ -19,7 +19,7 @@ CacheGames:true
 ; Startup sort order: Name, Developer, Year, Genre, Type, TimesPlayed, TimePlayed
 DefaultSort:Name
 
-; Startup right hand panel: Help, Info, Status, Full
+; Startup right hand panel: Help, Info, Status, Memory, Full
 DefaultView:Info
 
 ; Screen row the highlighted game is shown on, 0 = middle of the list

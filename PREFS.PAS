@@ -20,6 +20,7 @@ const
   ModeInfo = 1;
   ModeStatus = 2;
   ModeFullScreen = 3;
+  ModeMemory = 4;
   { Colours, matching the Crt unit's constants }
   ColBlack = 0;
   ColBlue = 1;
@@ -83,6 +84,7 @@ begin
   if ( name = 'HELP' ) then ParseView := ModeHelp
   else if ( name = 'INFO' ) then ParseView := ModeInfo
   else if ( name = 'STATUS' ) then ParseView := ModeStatus
+  else if ( name = 'MEMORY' ) then ParseView := ModeMemory
   else if ( name = 'FULL' ) or ( name = 'FULLSCREEN' ) then ParseView := ModeFullScreen
   else ParseView := default;
 end;

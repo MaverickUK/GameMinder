@@ -541,6 +541,15 @@ begin
   Delay(DelayOnStartup);
 end;
 
+{ Show a right hand panel, or the full screen games list if it's already showing }
+procedure SelectPanel(panel:byte);
+begin
+  if ( Mode = panel ) then
+    Mode := ModeFullScreen
+  else
+    Mode := panel;
+end;
+
 { ================== Main program loop ================== }
 var
     ch:char;
@@ -595,11 +604,11 @@ begin
                 if ( hMenu = MenuTheme ) then PreviewTheme;
               end;
 
-            {(( Mode ))}
-             #59 : Mode := ModeHelp; { F1 - Help }
-             #60 : Mode := ModeInfo; { F2 - Game info }
-             #61 : Mode := ModeStatus; { F3 - System status }
-             #62 : Mode := ModeFullScreen; { F4 - Full width }
+            {(( Mode - pressing the current panel's key again toggles full screen ))}
+             #59 : SelectPanel(ModeHelp); { F1 - Help }
+             #60 : SelectPanel(ModeInfo); { F2 - Game info }
+             #61 : SelectPanel(ModeStatus); { F3 - System status }
+             #62 : SelectPanel(ModeMemory); { F4 - Memory map }
 
             {(( Sort ))}
             #63: SortBy(smName); { F5 }
