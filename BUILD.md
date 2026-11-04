@@ -106,7 +106,7 @@ In DOSBox-X, `S:` is this repository. After editing the source, type `B` to rebu
 
 ## Demo video
 
-The README demo is recorded in DOSBox-X from a scripted set of key presses. Nothing is shown on screen while it records. To re-record it with a new build (needs `dosbox-x` and `ffmpeg`):
+The README demo is recorded in DOSBox-X from a scripted set of key presses. Nothing is shown on screen while it records, unless you add `--show` to watch it in a DOSBox-X window. To re-record it with a new build (needs `dosbox-x` and `ffmpeg`):
 
 ```
 gh run download <run-id> -n gamemind-dos -D build/dos
