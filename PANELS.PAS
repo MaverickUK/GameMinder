@@ -372,7 +372,7 @@ begin
 
   heading := '   ' + PadRight('Name', 12) + ' Low KB  High KB';
   if ( MapMaxScroll > 0 ) then heading := PadRight(heading, PanelTextWidth - 1) + #18; { Up/down arrow }
-  writeLine(heading, ColorHeadingText, ColorBackground );
+  writeLine(heading, ColorHeadingText, ColorHeadingBackground );
 
   if ( listRows > MemEntryCount ) then listRows := MemEntryCount;
   for i := MapScroll + 1 to MapScroll + listRows do begin
