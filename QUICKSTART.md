@@ -68,7 +68,8 @@ Esc clears the filter, or leaves a sub-menu (Run, Sort or Filter). Otherwise it 
 | F1 | Show help |
 | F2 | Show game information and play stats |
 | F3 | Show system status (date, drive space, memory) |
-| F4 | Full screen games list, with developer, genre and year |
+| F4 | Show a memory map: what's loaded in conventional and upper memory, such as drivers, TSRs and GameMinder itself, and whether the highlighted game will fit |
+| F1-F4 again | Full screen games list, with developer, genre and year. Press it once more to go back |
 | F5 | Sort games by name |
 | F6 | Sort games by developer |
 | F7 | Sort games by year |
@@ -130,7 +131,7 @@ All configurable options are in this file, with a comment explaining each one, s
 | `CacheGames` | `false` to scan for games every time GameMinder starts |
 | `MaxGames` | Most games to load (default 1,000, up to 16,000) |
 | `DefaultSort` | Sort order on startup: `Name`, `Developer`, `Year`, `Genre`, `Type`, `TimesPlayed` or `TimePlayed` |
-| `DefaultView` | Right hand panel on startup: `Help`, `Info`, `Status` or `Full` |
+| `DefaultView` | Right hand panel on startup: `Help`, `Info`, `Status`, `Memory` or `Full` |
 | `WaitForKeyAfterGame` | Pause after a game exits, to read any messages it left |
 | `PopularityIndicator` | `false` to hide the shaded blocks showing how much each game has been played |
 | `ExitScreen` | `false` to exit with a one-line message rather than the end screen showing what you played |

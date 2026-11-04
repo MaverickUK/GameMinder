@@ -12,8 +12,10 @@ uses
 
 const
   LaunchCancelled = $FFFF; { Returned by LaunchGame if the player chose not to run it }
+  ResidentKB = 3;          { ExecSwap's stub and memory control block, left while a game runs }
 
 function AvailableMemoryKB:longint;
+function GameFreeKB(game:PGame):longint;
 function EmsFreeKB:longint;
 function LaunchGame(game:PGame; interactive:boolean):word;
 function LaunchSetup(game:PGame; interactive:boolean):word;
@@ -32,7 +34,6 @@ uses
 const
   SwapFileName = 'SWAP.$$$';
   ScriptFileName = 'GMRUN.BAT';
-  ResidentKB = 3;       { ExecSwap's stub and memory control block, left while a game runs }
   ScriptOverheadKB = 5; { COMMAND.COM, when running before/after commands }
 
 { Conventional memory a game would get once GameMinder is swapped out, in KB }
@@ -51,6 +52,16 @@ begin
   inc(paragraphs, regs.BX);
 
   AvailableMemoryKB := paragraphs * 16 div 1024 - ResidentKB;
+end;
+
+{ Conventional memory a game will get, allowing for COMMAND.COM when it has
+  before/after commands - the same figure the warning before launching uses }
+function GameFreeKB(game:PGame):longint;
+begin
+  if NeedsLaunchScript(PStr(game^.Before), PStr(game^.After)) then
+    GameFreeKB := AvailableMemoryKB - ScriptOverheadKB
+  else
+    GameFreeKB := AvailableMemoryKB;
 end;
 
 { Free expanded (EMS) memory in KB, 0 if there's no EMS driver }
@@ -153,9 +164,9 @@ begin
   end
   else begin
     if ( EmsAllocated ) then
-      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to EMS')
+      VerboseWriteln('GameMinder swapped ' + GroupDigits(BytesSwapped) + ' bytes to EMS')
     else
-      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to ' + TempDir + SwapFileName);
+      VerboseWriteln('GameMinder swapped ' + GroupDigits(BytesSwapped) + ' bytes to ' + TempDir + SwapFileName);
     writeln('');
     SwapVectors;
     Status := ExecWithSwap(prog, args);
@@ -187,8 +198,8 @@ begin
 
   TextColor(Yellow);
   writeln('');
-  writeln(PStr(game^.Name), ' needs ', game^.MemoryKB, 'KB of conventional memory,');
-  writeln('but only about ', available, 'KB will be free. It may not run.');
+  writeln(PStr(game^.Name), ' needs ', GroupDigits(game^.MemoryKB), 'KB of conventional memory,');
+  writeln('but only about ', GroupDigits(available), 'KB will be free. It may not run.');
   TextColor(White);
 
   if ( interactive ) then begin

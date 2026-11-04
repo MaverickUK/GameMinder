@@ -16,7 +16,8 @@ const
   panelTop = 4;                    { First row of the right hand panel }
 
 var
-  Mode:byte;          { Current view, ModeHelp..ModeFullScreen from Prefs }
+  Mode:byte;          { Current view, ModeHelp..ModeMemory from Prefs }
+  FullScreenFrom:byte; { Panel the full screen list was opened from, by pressing its key again }
   ScreenRows:byte;    { Rows on screen e.g. 25 or 50 }
   StartupVideoMode:word;
 
@@ -29,8 +30,10 @@ procedure resetLineDrawing(backColour:byte);
 procedure blankLine;
 procedure blankRemainingLines;
 procedure writeLine(text:string; textColour:byte; backColour:byte);
+procedure writeColouredLine(text:string; colours:string; backColour:byte);
 procedure drawFrame(mode:byte; drawMode:TDrawScreenMode; x1,y1,x2,y2:byte);
 procedure SetupScreen(drawMode:TDrawScreenMode);
+procedure DrawFooter;
 procedure HideCursor;
 procedure ShowCursor;
 
@@ -74,7 +77,7 @@ begin
   modeChanged := false;
 end;
 
-{ Row of the bottom of the frame - the last row is left blank to avoid scrolling }
+{ Row of the bottom of the frame - the last row is the footer, see DrawFooter }
 function FrameBottom:byte;
 begin
   FrameBottom := ScreenRows - 1;
@@ -140,6 +143,33 @@ begin
   drawBlanks(panelWidth - length(text));
 
   { next row for next  }
+  inc(drawRow);
+end;
+
+{ Draw a line with its own colour for each character: colours holds a
+  text colour per character, as chr(colour) }
+procedure writeColouredLine(text:string; colours:string; backColour:byte);
+var
+  i, runStart:integer;
+begin
+  if ( drawRow >= FrameBottom ) then exit; { No room left }
+  if ( length(text) > panelWidth ) then text[0] := chr(panelWidth);
+
+  gotoxy(panelColumn, drawRow);
+  TextBackground(backColour);
+
+  { Write runs of the same colour together }
+  i := 1;
+  while ( i <= length(text) ) do begin
+    runStart := i;
+    while ( i < length(text) ) and ( i < length(colours) ) and ( colours[i + 1] = colours[runStart] ) do
+      inc(i);
+    if ( runStart <= length(colours) ) then TextColor(ord(colours[runStart]));
+    write(copy(text, runStart, i - runStart + 1));
+    inc(i);
+  end;
+  drawBlanks(panelWidth - length(text));
+
   inc(drawRow);
 end;
 
@@ -257,6 +287,129 @@ begin
     RenderSortBy;
     RenderFilter;
   end;
+end;
+
+{ ////////////////// Footer ////////////////// }
+
+{ Bottom row: the panel keys (F1-F4) with the one showing highlighted, and
+  the sort keys (F5-F10) apart on the right in their own colour }
+procedure DrawFooter;
+const
+  OnHeading = 128; { Added to a colour to draw it on the heading background }
+  SortText = ' F5-F10 Sort ';
+var
+  text, colours:string;
+  active:byte;
+  keyColour, activeText, activeBack, sortKey, sortLabel:byte;
+  i, runStart:integer;
+  regs:Registers;
+
+  procedure Add(part:string; colour:byte);
+  begin
+    text := text + part;
+    while ( length(colours) < length(text) ) do colours := colours + chr(colour);
+  end;
+
+  { e.g. F2 Info - a block in the heading colours when it's the panel showing }
+  procedure AddPanelKey(key:string; name:string; panel:byte);
+  begin
+    if ( panel = active ) then begin
+      if ( Mode = ModeFullScreen ) then name := 'Full screen'; { Pressing it again goes back }
+      Add(' ' + key + ' ' + name + ' ', activeText + OnHeading);
+    end
+    else begin
+      Add(key, keyColour);
+      Add(' ' + name, ColorText);
+    end;
+    Add('  ', ColorText);
+  end;
+
+  procedure SetColours(colour:byte);
+  begin
+    if ( colour >= OnHeading ) then begin
+      TextColor(colour - OnHeading);
+      TextBackground(activeBack);
+    end
+    else begin
+      TextColor(colour);
+      TextBackground(ColorBackground);
+    end;
+  end;
+
+{ Same colour once the bright bit is ignored, as backgrounds can't be bright }
+function SameBase(a, b:byte):boolean;
+begin
+  SameBase := ( a and 7 ) = ( b and 7 );
+end;
+
+begin
+  if ( Mode = ModeFullScreen ) then active := FullScreenFrom else active := Mode;
+
+  { Theme colours, with fallbacks for themes where they'd vanish, e.g.
+    Mono's black heading text or Commander's blue heading background }
+  keyColour := ColorHeadingText;
+  if SameBase(keyColour, ColorBackground) then keyColour := ColorText or 8;
+  activeText := ColorHeadingText;
+  activeBack := ColorHeadingBackground;
+  if SameBase(activeBack, ColorBackground) then begin
+    activeText := ColorHorizonalMenuHighlightText;
+    activeBack := ColorHorizonalMenuHighlightBackground;
+  end;
+
+  text := '';
+  colours := '';
+  Add(' ', ColorText);
+  AddPanelKey('F1', 'Help', ModeHelp);
+  AddPanelKey('F2', 'Info', ModeInfo);
+  AddPanelKey('F3', 'Status', ModeStatus);
+  AddPanelKey('F4', 'Memory', ModeMemory);
+
+  { Sort keys at the right, after a divider, in their own colour: cyan, or
+    the frame's colour in single colour themes on black }
+  if ( ColorBackground = Black ) then begin
+    sortLabel := ColorFrame;
+    sortKey := ColorFrame or 8;
+  end
+  else if SameBase(ColorBackground, Cyan) or SameBase(ColorText, Cyan) then begin
+    sortLabel := LightGray;
+    sortKey := White;
+  end
+  else begin
+    sortLabel := Cyan;
+    sortKey := LightCyan;
+  end;
+  if ( length(text) > columns - length(SortText) - 1 ) then text[0] := chr(columns - length(SortText) - 1);
+  while ( length(text) < columns - length(SortText) - 1 ) do Add(' ', ColorText);
+  colours[0] := text[0];
+  Add(#179, sortLabel); { Thin vertical line }
+  Add(' ', sortLabel);
+  Add('F5-F10', sortKey);
+  Add(' Sort ', sortLabel);
+
+  { All but the last character, in runs of the same colour. Writing the
+    last one with Crt would scroll the screen up }
+  gotoxy(1, ScreenRows);
+  i := 1;
+  while ( i < columns ) do begin
+    runStart := i;
+    while ( i < columns - 1 ) and ( colours[i + 1] = colours[runStart] ) do inc(i);
+    SetColours(ord(colours[runStart]));
+    write(copy(text, runStart, i - runStart + 1));
+    inc(i);
+  end;
+
+  { The last character through the video BIOS, which doesn't scroll }
+  regs.AH := $02; { Move the cursor there }
+  regs.BH := 0;
+  regs.DH := ScreenRows - 1;
+  regs.DL := columns - 1;
+  Intr($10, regs);
+  regs.AH := $09; { Write a character and attribute }
+  regs.AL := ord(text[columns]);
+  regs.BH := 0;
+  regs.BL := ( ColorBackground shl 4 ) or ( ord(colours[columns]) and $0F );
+  regs.CX := 1;
+  Intr($10, regs);
 end;
 
 { ////////////////// Cursor ////////////////// }

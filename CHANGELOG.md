@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [0.8.0] - 2026-11-04
+
+### Added
+- Footer on the bottom row showing the panel keys, F1 Help, F2 Info, F3 Status and F4 Memory, with the panel that's showing highlighted, or "Full screen" on the key that opened the full screen list. The sort keys, F5-F10, are shown apart on the right in their own colour
+- Memory map (F4): what's loaded in memory while a game runs, like `MEM /C`. A map of conventional memory in 5KB blocks, with upper memory below it, shows each driver and program in its own colour, DOS shaded dark and free memory light. Below it a list of DOS, device drivers such as HIMEM and EMM386, TSRs such as MOUSE and MSCDEX, and GameMinder, with how much each uses in low and high memory. GameMinder is shown as the few KB it leaves behind when a game runs, so free memory matches the Status panel, with a note of what it uses until it's swapped out. If the highlighted game has `memory:` set, it says whether the game fits and by how much. EMM386's 64KB EMS page frame shows in upper memory. When there are more programs than fit, the list scrolls slowly. On DOS 3, which doesn't record program names, names come from each program's environment. `DefaultView:Memory` in `SETTINGS.TXT` opens it on startup
+
+### Changed
+- Disk and memory sizes are shown with commas between groups of three digits, e.g. 1,015 MB and 15,168 KB, in the panels, the memory warning before launching a game and the startup screen
+- Full screen is no longer on F4. Press the key for the panel that's showing (F1-F4) again to switch to the full screen games list, and once more to go back
+- System status (F3) shows conventional memory as a bar, solid for what's free for games and shaded for what DOS and drivers use, with free EMS and XMS memory below it. The GameMinder heap line is gone
+
 ## [0.7.0] - 2026-11-03
 
 ### Added
@@ -137,6 +148,8 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.8.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.8.0
+[0.7.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.7.0
 [0.6.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.6.1
 [0.6.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.6.0
 [0.5.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.5.0

@@ -486,10 +486,10 @@ begin
 
   ems := EmsFreeKB;
   if ( ems > 0 ) then
-    StartupLine('Z_Init: ' + ConvertToString(AvailableMemoryKB) + 'KB conventional, ' +
-      ConvertToString(ems) + 'KB EMS free for games')
+    StartupLine('Z_Init: ' + GroupDigits(AvailableMemoryKB) + 'KB conventional, ' +
+      GroupDigits(ems) + 'KB EMS free for games')
   else
-    StartupLine('Z_Init: ' + ConvertToString(AvailableMemoryKB) + 'KB conventional memory free for games');
+    StartupLine('Z_Init: ' + GroupDigits(AvailableMemoryKB) + 'KB conventional memory free for games');
 
   StartupText('W_Init: ');
   ShowScanProgress := true;
@@ -534,11 +534,23 @@ begin
   StartupLine('L_Init: Sorting by ' + SortModeName(DefaultSort));
   SortGames(DefaultSort);
   Mode := DefaultView;
+  FullScreenFrom := ModeInfo; { For the footer, if starting full screen }
 
   StartupLine(FlavourLine);
   StartupLine('D_GameLoop: Ready');
 
   Delay(DelayOnStartup);
+end;
+
+{ Show a right hand panel, or the full screen games list if it's already showing }
+procedure SelectPanel(panel:byte);
+begin
+  if ( Mode = panel ) then begin
+    FullScreenFrom := panel;
+    Mode := ModeFullScreen;
+  end
+  else
+    Mode := panel;
 end;
 
 { ================== Main program loop ================== }
@@ -570,6 +582,7 @@ begin
 
  { Main input loop }
   repeat
+    while not KeyPressed do PanelIdle; { e.g. scroll the memory map }
     ch:=ReadKey; { https://www.freepascal.org/docs-html/rtl/crt/readkey.html }
     previousMode := Mode;
 
@@ -595,11 +608,11 @@ begin
                 if ( hMenu = MenuTheme ) then PreviewTheme;
               end;
 
-            {(( Mode ))}
-             #59 : Mode := ModeHelp; { F1 - Help }
-             #60 : Mode := ModeInfo; { F2 - Game info }
-             #61 : Mode := ModeStatus; { F3 - System status }
-             #62 : Mode := ModeFullScreen; { F4 - Full width }
+            {(( Mode - pressing the current panel's key again toggles full screen ))}
+             #59 : SelectPanel(ModeHelp); { F1 - Help }
+             #60 : SelectPanel(ModeInfo); { F2 - Game info }
+             #61 : SelectPanel(ModeStatus); { F3 - System status }
+             #62 : SelectPanel(ModeMemory); { F4 - Memory map }
 
             {(( Sort ))}
             #63: SortBy(smName); { F5 }

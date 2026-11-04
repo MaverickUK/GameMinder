@@ -3,14 +3,19 @@
 #
 # Builds a demo C: drive with 25 games (metadata plus stand-in programs, made by
 # scripts/make-testdata.py), types a scripted sequence of keys with
-# DOSBox-X's AUTOTYPE and captures it with DX-CAPTURE. No window is shown.
+# DOSBox-X's AUTOTYPE and captures it with DX-CAPTURE. No window is shown unless --show is given.
 #
-# Usage:   scripts/record-demo.sh path/to/GAMEMIND.EXE
+# Usage:   scripts/record-demo.sh [--show] path/to/GAMEMIND.EXE
+#          --show opens a DOSBox-X window to watch the recording
 # Needs:   DOSBox-X (on PATH, or set DOSBOX_X), ffmpeg, Python 3
 # Output:  docs/gameminder-demo.gif and docs/gameminder-demo.mp4
 #
 # Get GAMEMIND.EXE from a CI run: gh run download <run-id> -n gamemind-dos
 set -euo pipefail
+
+# Hidden by default: no window or sound
+hide="SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy"
+if [ "${1:-}" = --show ]; then hide=; shift; fi
 
 exe=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 repo=$(cd "$(dirname "$0")/.." && pwd)
@@ -44,18 +49,19 @@ make_drive() {
 
 # Each key is pressed 1.2s apart, "," adds an extra pause. Keep the autotype command
 # under 255 characters, or DOSBox-X ignores the end of it:
-#   browse, help (F1), status (F3), info (F2), full screen (F4), sort by played/name,
+#   browse, help (F1), status (F3), memory map (F4), info (F2), full screen (F2 again),
+#   sort by played/name,
 #   type "keen" to filter, run Commander Keen 4 (a .BAT), quit it ("y"), check play stats,
 #   Esc clears the filter, Sort menu > Developer, Esc back, Add (Ins) Raptor, type its
 #   developer and save (F10), Theme > Turbo, Commander, Mono and keep it, Esc exits
 #   to the end screen, which DX-CAPTURE keeps recording for 3 seconds
-keys="down down f1 , f3 , f2 f4 , f9 , f5 f2 k e e n , down , enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down down a p o g e e , f10 , left left left left enter , right , right , right , enter , esc"
+keys="down down f1 , f3 , f4 , , f2 f2 , f9 , f5 f2 k e e n , down enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down down a p o g e e , f10 left left left left enter , right , right , right , enter , esc"
 
 # DOSBox-X closes at the time limit, after the recording has finished. It sometimes crashes
 # while recording once a game has run (and always with -exit), so try a few times
 for attempt in 1 2 3; do
   make_drive
-  SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$dosbox" -fastlaunch -nomenu -time-limit 170 \
+  env $hide "$dosbox" -fastlaunch -nomenu -time-limit 180 \
     -set "dosbox captures=$(native "$work/capture")" \
     -c "mount c \"$(native "$work/c")\"" -c "c:" -c "cls" -c "cd \\GMIND" \
     -c "autotype -w 6 -p 1.2 $keys" \

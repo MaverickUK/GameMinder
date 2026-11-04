@@ -17,7 +17,8 @@ Both use ExecSwap (TurboPower Software) to launch games: GameMinder swaps itself
 | `PREFS.PAS` | Settings from `SETTINGS.TXT` |
 | `SCREEN.PAS` | Screen layout, frame and panel drawing |
 | `LISTVIEW.PAS` | Games list, scrolling, sorting and filtering |
-| `PANELS.PAS` | Help, game info and system status panels |
+| `PANELS.PAS` | Help, game info, system status and memory map panels |
+| `MEMMAP.PAS` | Memory map: walks DOS's memory control blocks for what's in conventional and upper memory |
 | `MENU.PAS` | Horizontal menu |
 | `FORMS.PAS` | Game details form, picking from a list, questions |
 | `RUNNER.PAS` | Running games: swapping, before/after commands, memory check, play stats |
@@ -105,7 +106,7 @@ In DOSBox-X, `S:` is this repository. After editing the source, type `B` to rebu
 
 ## Demo video
 
-The README demo is recorded in DOSBox-X from a scripted set of key presses. Nothing is shown on screen while it records. To re-record it with a new build (needs `dosbox-x` and `ffmpeg`):
+The README demo is recorded in DOSBox-X from a scripted set of key presses. Nothing is shown on screen while it records, unless you add `--show` to watch it in a DOSBox-X window. To re-record it with a new build (needs `dosbox-x` and `ffmpeg`):
 
 ```
 gh run download <run-id> -n gamemind-dos -D build/dos

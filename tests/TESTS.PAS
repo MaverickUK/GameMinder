@@ -122,6 +122,16 @@ begin
   CheckStr('FormatBytes KB', '640 KB', FormatBytes(655360));
   CheckStr('FormatBytes MB', '500 MB', FormatBytes(524288000));
   CheckStr('FormatBytes invalid', 'N/A', FormatBytes(-1));
+  CheckStr('FormatBytes groups MB', '1,015 MB', FormatBytes(1064304640));
+  CheckStr('FormatBytes groups KB', '9,999 KB', FormatBytes(10238976));
+  CheckStr('FormatBytes groups bytes', '9,999 bytes', FormatBytes(9999));
+  CheckStr('GroupDigits small', '640', GroupDigits(640));
+  CheckStr('GroupDigits zero', '0', GroupDigits(0));
+  CheckStr('GroupDigits thousand', '1,000', GroupDigits(1000));
+  CheckStr('GroupDigits EMS', '15,168', GroupDigits(15168));
+  CheckStr('GroupDigits million', '1,048,576', GroupDigits(1048576));
+  CheckStr('GroupDigits largest', '2,147,483,647', GroupDigits(2147483647));
+  CheckStr('GroupDigits negative', '-12,345', GroupDigits(-12345));
 
   CheckStr('DosErrorText known', 'File not found', DosErrorText(2));
   CheckStr('DosErrorText unknown', 'DOS error 99', DosErrorText(99));

@@ -32,6 +32,7 @@ function MinutesToFriendlyTime(minutes:longint):string;
 function MinutesBetweenTimes(startTime:string; endTime:string):word;
 function DayNumber(year,month,day:word):longint;
 function ElapsedMinutes(startDay:longint; startMinute:word; endDay:longint; endMinute:word):longint;
+function GroupDigits(value:longint):string;
 function FormatBytes(bytes:longint):string;
 function DosErrorText(code:word):string;
 function ParseMemoryKB(value:string):word;
@@ -191,16 +192,38 @@ begin
 end;
 
 { Format a byte count as a short human readable size }
+{ A number with commas between groups of three digits, e.g. 15,168 }
+function GroupDigits(value:longint):string;
+var
+  digits, grouped:string;
+  count:integer;
+begin
+  digits := ConvertToString(abs(value));
+  grouped := '';
+  count := 0;
+  while ( length(digits) > 0 ) do begin
+    if ( count = 3 ) then begin
+      grouped := ',' + grouped;
+      count := 0;
+    end;
+    grouped := digits[length(digits)] + grouped;
+    dec(digits[0]);
+    inc(count);
+  end;
+  if ( value < 0 ) then grouped := '-' + grouped;
+  GroupDigits := grouped;
+end;
+
 function FormatBytes(bytes:longint):string;
 begin
   if ( bytes < 0 ) then
     FormatBytes := 'N/A'
   else if ( bytes >= 10485760 ) then { 10MB+ }
-    FormatBytes := ConvertToString(bytes div 1048576) + ' MB'
+    FormatBytes := GroupDigits(bytes div 1048576) + ' MB'
   else if ( bytes >= 10240 ) then { 10KB+ }
-    FormatBytes := ConvertToString(bytes div 1024) + ' KB'
+    FormatBytes := GroupDigits(bytes div 1024) + ' KB'
   else
-    FormatBytes := ConvertToString(bytes) + ' bytes';
+    FormatBytes := GroupDigits(bytes) + ' bytes';
 end;
 
 { Describe the common DOS errors returned when launching a game }
