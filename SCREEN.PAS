@@ -29,6 +29,7 @@ procedure resetLineDrawing(backColour:byte);
 procedure blankLine;
 procedure blankRemainingLines;
 procedure writeLine(text:string; textColour:byte; backColour:byte);
+procedure writeColouredLine(text:string; colours:string; backColour:byte);
 procedure drawFrame(mode:byte; drawMode:TDrawScreenMode; x1,y1,x2,y2:byte);
 procedure SetupScreen(drawMode:TDrawScreenMode);
 procedure HideCursor;
@@ -140,6 +141,33 @@ begin
   drawBlanks(panelWidth - length(text));
 
   { next row for next  }
+  inc(drawRow);
+end;
+
+{ Draw a line with its own colour for each character: colours holds a
+  text colour per character, as chr(colour) }
+procedure writeColouredLine(text:string; colours:string; backColour:byte);
+var
+  i, runStart:integer;
+begin
+  if ( drawRow >= FrameBottom ) then exit; { No room left }
+  if ( length(text) > panelWidth ) then text[0] := chr(panelWidth);
+
+  gotoxy(panelColumn, drawRow);
+  TextBackground(backColour);
+
+  { Write runs of the same colour together }
+  i := 1;
+  while ( i <= length(text) ) do begin
+    runStart := i;
+    while ( i < length(text) ) and ( i < length(colours) ) and ( colours[i + 1] = colours[runStart] ) do
+      inc(i);
+    if ( runStart <= length(colours) ) then TextColor(ord(colours[runStart]));
+    write(copy(text, runStart, i - runStart + 1));
+    inc(i);
+  end;
+  drawBlanks(panelWidth - length(text));
+
   inc(drawRow);
 end;
 

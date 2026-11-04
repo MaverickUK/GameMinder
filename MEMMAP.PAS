@@ -17,17 +17,21 @@ only in the chain while they're linked in, so they're linked while walking.
 ------------------------------}
 
 { --------- interface -------- }
+{ --------- interface -------- }
 interface
 
 const
   MaxMemEntries = 40;
   MaxMemRegions = 80;
   LowEndSeg = $A000;  { End of conventional memory, 640KB }
+  MapFree = 0;        { MapCellEntry for free memory }
+  MapNone = -1;       { MapCellEntry for no usable memory, e.g. video or ROM }
 
 type
-  TMemKind = (mkSystem, mkProgram, mkFree, mkReserved);
+  TMemKind = (mkSystem, mkProgram);
 
-  { A named owner of memory, with its total in conventional and upper memory }
+  { A named owner of memory - DOS, a driver or a program - with its total
+    in conventional (low) and upper (high) memory }
   TMemEntry = record
     Name:string[12];
     Kind:TMemKind;
@@ -38,7 +42,7 @@ type
   TMemRegion = record
     StartSeg:longint;
     Paragraphs:longint;
-    Kind:TMemKind;
+    Entry:integer; { Index into MemEntries, or MapFree / MapNone }
   end;
 
 var
@@ -49,8 +53,8 @@ var
   FreeLowBytes, FreeHighBytes:longint;
   HasUpperMemory:boolean;  { True when upper memory blocks were found }
 
-procedure ScanMemory;
-function MemoryMapBar(fromSeg, toSeg:longint; width:byte):string;
+procedure ScanMemory(selfResidentKB:word);
+function MapCellEntry(cellStart, cellEnd:longint):integer;
 
 { --------- implementation --------- }
 implementation
@@ -138,20 +142,21 @@ begin
   OwnerName := name;
 end;
 
-procedure AddRegion(startSeg, paragraphs:longint; kind:TMemKind);
+procedure AddRegion(startSeg, paragraphs:longint; entry:integer);
 begin
-  if ( MemRegionCount >= MaxMemRegions ) then exit;
+  if ( paragraphs <= 0 ) or ( MemRegionCount >= MaxMemRegions ) then exit;
   inc(MemRegionCount);
   MemRegions[MemRegionCount].StartSeg := startSeg;
   MemRegions[MemRegionCount].Paragraphs := paragraphs;
-  MemRegions[MemRegionCount].Kind := kind;
+  MemRegions[MemRegionCount].Entry := entry;
 end;
 
-{ Add memory to a named entry, combining blocks with the same name }
+{ Add memory to a named entry, combining blocks with the same name, and map it }
 procedure AddEntry(name:string; kind:TMemKind; startSeg, paragraphs:longint);
 var
   i, found:integer;
 begin
+  if ( paragraphs <= 0 ) then exit;
   found := 0;
   for i := 1 to MemEntryCount do
     if ( MemEntries[i].Name = name ) and ( MemEntries[i].Kind = kind ) then found := i;
@@ -170,6 +175,17 @@ begin
     inc(MemEntries[found].LowBytes, paragraphs * 16)
   else
     inc(MemEntries[found].HighBytes, paragraphs * 16);
+  AddRegion(startSeg, paragraphs, found);
+end;
+
+procedure AddFree(startSeg, paragraphs:longint);
+begin
+  if ( paragraphs <= 0 ) then exit;
+  if ( startSeg < LowEndSeg ) then
+    inc(FreeLowBytes, paragraphs * 16)
+  else
+    inc(FreeHighBytes, paragraphs * 16);
+  AddRegion(startSeg, paragraphs, MapFree);
 end;
 
 { Device drivers and DOS data inside DOS's system data block }
@@ -193,11 +209,11 @@ begin
       'D', 'I': begin { Device driver or installable file system }
           lastDriver := McbName(word(sub));
           if ( lastDriver = '' ) then lastDriver := 'Driver';
-          AddEntry(lastDriver, mkSystem, sub, size);
+          AddEntry(lastDriver, mkProgram, sub, size);
         end;
       'E': { More memory belonging to the driver before it }
           if ( lastDriver <> '' ) then
-            AddEntry(lastDriver, mkSystem, sub, size)
+            AddEntry(lastDriver, mkProgram, sub, size)
           else
             AddEntry('DOS', mkSystem, sub, size);
     else
@@ -211,10 +227,12 @@ begin
   if ( sub < blockEnd ) then AddEntry('DOS', mkSystem, sub, blockEnd - sub);
 end;
 
-procedure ScanMemory;
+{ selfResidentKB is how much of GameMinder stays in memory while a game runs.
+  The rest of GameMinder's own block is counted as free, as games get it. }
+procedure ScanMemory(selfResidentKB:word);
 var
   regs:Registers;
-  mcb, owner, paragraphs, firstMcb:longint;
+  mcb, owner, paragraphs, firstMcb, resident:longint;
   signature:char;
   linkState:byte;
   linkChanged:boolean;
@@ -246,7 +264,6 @@ begin
 
   { Interrupt vectors, BIOS data and the DOS kernel come before the first MCB }
   AddEntry('DOS', mkSystem, 0, firstMcb);
-  AddRegion(0, firstMcb, mkSystem);
 
   mcb := firstMcb;
   blocks := 0;
@@ -256,41 +273,36 @@ begin
     owner := MemW[word(mcb):1];
     paragraphs := MemW[word(mcb):3];
 
-    if ( owner = OwnerFree ) then begin
-      AddRegion(mcb, paragraphs + 1, mkFree);
-      if ( mcb < LowEndSeg ) then
-        inc(FreeLowBytes, paragraphs * 16)
-      else
-        inc(FreeHighBytes, paragraphs * 16);
-    end
+    if ( owner = OwnerFree ) then
+      AddFree(mcb, paragraphs + 1)
     else if ( owner = OwnerDos ) then begin
       name := McbName(word(mcb));
       if ( ( mcb < LowEndSeg ) and ( mcb + paragraphs + 1 > LowEndSeg ) )
          or ( ( mcb >= LowEndSeg ) and ( name = 'SC' ) ) then
         { Video memory and ROMs, skipped over to reach or between upper memory blocks }
-        AddRegion(mcb, paragraphs + 1, mkReserved)
+        AddRegion(mcb, paragraphs + 1, MapNone)
       else if ( name = 'SD' ) then begin
         AddEntry('DOS', mkSystem, mcb, 1);
         ScanSystemData(mcb, paragraphs);
-        AddRegion(mcb, paragraphs + 1, mkSystem);
       end
-      else begin
+      else
         AddEntry('DOS', mkSystem, mcb, paragraphs + 1);
-        AddRegion(mcb, paragraphs + 1, mkSystem);
-      end;
     end
     else if ( owner = 6 ) or ( owner = 7 ) or ( owner >= $FFF0 ) then
       { Upper memory excluded or reserved by the memory manager }
-      AddRegion(mcb, paragraphs + 1, mkReserved)
-    else if ( Mem[word(owner):0] <> $CD ) then begin
+      AddRegion(mcb, paragraphs + 1, MapNone)
+    else if ( Mem[word(owner):0] <> $CD ) then
       { Owner isn't a program - every PSP starts with INT 20h (CD 20) }
-      AddEntry('DOS', mkSystem, mcb, paragraphs + 1);
-      AddRegion(mcb, paragraphs + 1, mkSystem);
+      AddEntry('DOS', mkSystem, mcb, paragraphs + 1)
+    else if ( owner = PrefixSeg ) and ( owner = mcb + 1 ) then begin
+      { GameMinder itself: only its stub stays while a game runs }
+      resident := longint(selfResidentKB) * 64;
+      if ( resident > paragraphs + 1 ) then resident := paragraphs + 1;
+      AddEntry('GameMinder', mkProgram, mcb, resident);
+      AddFree(mcb + resident, paragraphs + 1 - resident);
     end
-    else begin
+    else
       AddEntry(OwnerName(word(owner)), mkProgram, mcb, paragraphs + 1);
-      AddRegion(mcb, paragraphs + 1, mkProgram);
-    end;
 
     if ( mcb >= LowEndSeg ) and ( owner <> 6 ) and ( owner <> 7 ) then
       HasUpperMemory := true;
@@ -306,45 +318,45 @@ begin
   end;
 end;
 
-{ A map of memory between two segments: DOS and drivers, programs, free,
-  or a dot where there's no usable memory }
-function MemoryMapBar(fromSeg, toSeg:longint; width:byte):string;
+{ What to show for a cell of the memory map covering cellStart to cellEnd
+  (segments). Programs and drivers win over DOS, DOS over free memory, so
+  even a small TSR gets a cell. Returns an entry, MapFree or MapNone. }
+function MapCellEntry(cellStart, cellEnd:longint):integer;
 var
-  bar:string;
-  cell, i:integer;
-  cellStart, cellEnd, overlapStart, overlapEnd:longint;
-  amount:array[TMemKind] of longint;
-  kind, best:TMemKind;
+  i, entry, bestProgram, dos:integer;
+  overlapStart, overlapEnd, size, bestSize:longint;
+  free:boolean;
 begin
-  bar[0] := chr(width);
-  for cell := 1 to width do begin
-    cellStart := fromSeg + ( toSeg - fromSeg ) * ( cell - 1 ) div width;
-    cellEnd := fromSeg + ( toSeg - fromSeg ) * cell div width;
-    for kind := mkSystem to mkReserved do amount[kind] := 0;
+  bestProgram := 0;
+  bestSize := 0;
+  dos := 0;
+  free := false;
 
-    for i := 1 to MemRegionCount do begin
-      overlapStart := MemRegions[i].StartSeg;
-      overlapEnd := overlapStart + MemRegions[i].Paragraphs;
-      if ( overlapStart < cellStart ) then overlapStart := cellStart;
-      if ( overlapEnd > cellEnd ) then overlapEnd := cellEnd;
-      if ( overlapEnd > overlapStart ) then
-        inc(amount[MemRegions[i].Kind], overlapEnd - overlapStart);
-    end;
-
-    { Whatever fills most of the cell }
-    best := mkReserved;
-    for kind := mkSystem to mkFree do
-      if ( amount[kind] > 0 ) and ( amount[kind] >= amount[best] ) then best := kind;
-
-    case best of
-      mkSystem: bar[cell] := #178;  { Dark shade }
-      mkProgram: bar[cell] := #177; { Medium shade }
-      mkFree: bar[cell] := #176;    { Light shade }
-    else
-      bar[cell] := #250;            { Small dot }
+  for i := 1 to MemRegionCount do begin
+    overlapStart := MemRegions[i].StartSeg;
+    overlapEnd := overlapStart + MemRegions[i].Paragraphs;
+    if ( overlapStart < cellStart ) then overlapStart := cellStart;
+    if ( overlapEnd > cellEnd ) then overlapEnd := cellEnd;
+    size := overlapEnd - overlapStart;
+    if ( size > 0 ) then begin
+      entry := MemRegions[i].Entry;
+      if ( entry = MapFree ) then
+        free := true
+      else if ( entry > 0 ) then begin
+        if ( MemEntries[entry].Kind = mkSystem ) then
+          dos := entry
+        else if ( size > bestSize ) then begin
+          bestProgram := entry;
+          bestSize := size;
+        end;
+      end;
     end;
   end;
-  MemoryMapBar := bar;
+
+  if ( bestProgram > 0 ) then MapCellEntry := bestProgram
+  else if ( dos > 0 ) then MapCellEntry := dos
+  else if ( free ) then MapCellEntry := MapFree
+  else MapCellEntry := MapNone;
 end;
 
 end.

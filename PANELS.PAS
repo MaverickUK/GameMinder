@@ -184,35 +184,129 @@ begin
   blankRemainingLines;
 end;
 
-{ Memory in KB for the memory map, rounded up so small drivers show, blank if none }
-function MapKB(bytes:longint; width:byte):string;
+{ Memory in KB for the memory map, blank if none. Used memory is rounded up
+  so small drivers show, free memory down to match the Status panel }
+function MapKB(bytes:longint; width:byte; roundUp:boolean):string;
 var
   text:string;
 begin
-  if ( bytes = 0 ) then text := '' else text := ConvertToString(( bytes + 1023 ) div 1024);
+  if ( bytes = 0 ) then text := ''
+  else if ( roundUp ) then text := ConvertToString(( bytes + 1023 ) div 1024)
+  else text := ConvertToString(bytes div 1024);
   while ( length(text) < width ) do text := ' ' + text;
   MapKB := text;
 end;
 
-{ What's loaded in conventional (low) and upper (high) memory }
+{ Colours for the memory map, one per program or driver. Dark ones last }
+const
+  MapPaletteSize = 13;
+  MapPalette: array[1..MapPaletteSize] of byte =
+    (Yellow, LightGreen, LightMagenta, LightCyan, LightRed, White, Brown,
+     Green, Magenta, Cyan, Red, LightBlue, LightGray);
+  MapCellKB = 5;          { Low memory map: 5KB a cell, 32 cells a row, 4 rows }
+  MapCells = 32;
+  MapLowRows = 4;
+
+var
+  MapColours: array[0..MaxMemEntries] of byte;
+
+{ Give each program and driver its own colour, avoiding the panel's colours }
+procedure AssignMapColours;
+var
+  i, next, tries:integer;
+  colour:byte;
+begin
+  next := 0;
+  MapColours[0] := ColorText;
+  for i := 1 to MemEntryCount do begin
+    if ( MemEntries[i].Kind = mkSystem ) then
+      MapColours[i] := ColorText
+    else begin
+      tries := 0;
+      repeat
+        colour := MapPalette[next mod MapPaletteSize + 1];
+        inc(next);
+        inc(tries);
+      until ( ( ( colour and 7 ) <> ( ColorBackground and 7 ) ) and ( colour <> ColorText ) )
+            or ( tries > MapPaletteSize );
+      MapColours[i] := colour;
+    end;
+  end;
+end;
+
+{ Character and colour for an entry in the map and list }
+function MapChar(entry:integer):char;
+begin
+  if ( entry = MapFree ) then MapChar := #176         { Light shade }
+  else if ( entry = MapNone ) then MapChar := #250    { Small dot }
+  else if ( MemEntries[entry].Kind = mkSystem ) then MapChar := #178 { Dark shade }
+  else MapChar := #219;                               { Solid block }
+end;
+
+function MapColour(entry:integer):byte;
+begin
+  if ( entry > 0 ) then MapColour := MapColours[entry] else MapColour := ColorText;
+end;
+
+{ One row of the map, from fromSeg in steps of cellParagraphs, after a label }
+procedure drawMapRow(rowLabel:string; fromSeg, cellParagraphs:longint);
+var
+  text, colours:string;
+  cell, entry:integer;
+  cellStart:longint;
+begin
+  while ( length(rowLabel) < 5 ) do rowLabel := ' ' + rowLabel;
+  text := rowLabel + ' ';
+  colours := '';
+  while ( length(colours) < length(text) ) do colours := colours + chr(ColorText);
+
+  for cell := 0 to MapCells - 1 do begin
+    cellStart := fromSeg + cell * cellParagraphs;
+    entry := MapCellEntry(cellStart, cellStart + cellParagraphs);
+    text := text + MapChar(entry);
+    colours := colours + chr(MapColour(entry));
+  end;
+  writeColouredLine(text, colours, ColorBackground);
+end;
+
+{ A row of the list: coloured key, name, then KB in low and high memory }
+procedure drawMapListRow(entry:integer; name:string; lowBytes, highBytes:longint; textColour:byte);
+var
+  text, colours:string;
+begin
+  text := ' ' + MapChar(entry) + ' ' + PadRight(name, 12)
+          + MapKB(lowBytes, 7, entry <> MapFree) + MapKB(highBytes, 9, entry <> MapFree);
+  colours := chr(textColour) + chr(MapColour(entry));
+  while ( length(colours) < length(text) ) do colours := colours + chr(textColour);
+  writeColouredLine(text, colours, ColorBackground);
+end;
+
+{ What's loaded in conventional (low) and upper (high) memory, as it will be
+  while a game runs - GameMinder is counted as just the stub it leaves }
 procedure drawMemoryPanel;
 const
-  LinesBeforeList = 6;
+  LinesBeforeList = 7;
 var
-  i, listRows, shown:integer;
+  i, row, listRows, shown:integer;
 begin
-  ScanMemory;
+  ScanMemory(ResidentKB);
+  AssignMapColours;
   resetLineDrawing(ColorBackground);
 
-  writeLine(' Memory Map', ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Low  ' + MemoryMapBar(0, LowEndSeg, PanelTextWidth - 6), ColorText, ColorBackground );
+  writeLine(' Memory Map - while a game runs', ColorHeadingText, ColorHeadingBackground );
+
+  { Low memory, 160KB a row }
+  for row := 0 to MapLowRows - 1 do
+    drawMapRow(ConvertToString(row * MapCells * MapCellKB) + 'K',
+               longint(row) * MapCells * MapCellKB * 64, MapCellKB * 64);
+
+  { Upper memory, 640KB to 1MB on one row }
   if ( HasUpperMemory ) then
-    writeLine(' High ' + MemoryMapBar(LowEndSeg, $10000, PanelTextWidth - 6), ColorText, ColorBackground )
+    drawMapRow('UMB', LowEndSeg, ( $10000 - LowEndSeg ) div MapCells)
   else
-    writeLine(' High No upper memory blocks', ColorText, ColorBackground );
-  writeLine(' ' + #178 + ' DOS   ' + #177 + ' Programs   ' + #176 + ' Free', ColorText, ColorBackground );
-  blankLine;
-  writeLine(' ' + PadRight('Name', 14) + '  Low KB  High KB', ColorHeadingText, ColorBackground );
+    writeLine('   UMB none', ColorText, ColorBackground );
+
+  writeLine('   ' + PadRight('Name', 12) + ' Low KB  High KB', ColorHeadingText, ColorBackground );
 
   { Leave a row for free memory, and one to say if some didn't fit }
   listRows := FrameBottom - panelTop - LinesBeforeList - 1;
@@ -220,13 +314,11 @@ begin
   if ( shown > listRows ) then shown := listRows - 1;
 
   for i := 1 to shown do
-    writeLine(' ' + PadRight(MemEntries[i].Name, 14) + MapKB(MemEntries[i].LowBytes, 8)
-              + MapKB(MemEntries[i].HighBytes, 9), ColorText, ColorBackground );
+    drawMapListRow(i, MemEntries[i].Name, MemEntries[i].LowBytes, MemEntries[i].HighBytes, ColorText);
   if ( shown < MemEntryCount ) then
-    writeLine(' ...and ' + ConvertToString(MemEntryCount - shown) + ' more', ColorText, ColorBackground );
+    writeLine('   ...and ' + ConvertToString(MemEntryCount - shown) + ' more', ColorText, ColorBackground );
 
-  writeLine(' ' + PadRight('Free', 14) + MapKB(FreeLowBytes, 8) + MapKB(FreeHighBytes, 9),
-            ColorHeadingText, ColorBackground );
+  drawMapListRow(MapFree, 'Free', FreeLowBytes, FreeHighBytes, ColorHeadingText);
 
   blankRemainingLines;
 end;

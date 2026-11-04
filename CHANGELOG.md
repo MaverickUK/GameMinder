@@ -9,7 +9,7 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 ## [Unreleased]
 
 ### Added
-- Memory map (F4): what's loaded in conventional and upper memory, like `MEM /C`. Bars show low memory (0-640KB) and upper memory (640KB-1MB) shaded for DOS and drivers, programs and free space, with a list of DOS, device drivers such as HIMEM and EMM386, TSRs such as MOUSE and MSCDEX, and GameMinder itself, with how much each uses low and high. `DefaultView:Memory` in `SETTINGS.TXT` opens it on startup
+- Memory map (F4): what's loaded in memory while a game runs, like `MEM /C`. A map of conventional memory in 5KB blocks, with upper memory below it, shows each driver and program in its own colour, DOS shaded dark and free memory light. Below it a list of DOS, device drivers such as HIMEM and EMM386, TSRs such as MOUSE and MSCDEX, and GameMinder, with how much each uses in low and high memory. GameMinder is shown as the few KB it leaves behind when a game runs, so free memory matches the Status panel. `DefaultView:Memory` in `SETTINGS.TXT` opens it on startup
 
 ### Changed
 - Full screen is no longer on F4. Press the key for the panel that's showing (F1-F4) again to switch to the full screen games list, and once more to go back

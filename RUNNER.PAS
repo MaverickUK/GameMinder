@@ -12,6 +12,7 @@ uses
 
 const
   LaunchCancelled = $FFFF; { Returned by LaunchGame if the player chose not to run it }
+  ResidentKB = 3;          { ExecSwap's stub and memory control block, left while a game runs }
 
 function AvailableMemoryKB:longint;
 function EmsFreeKB:longint;
@@ -32,7 +33,6 @@ uses
 const
   SwapFileName = 'SWAP.$$$';
   ScriptFileName = 'GMRUN.BAT';
-  ResidentKB = 3;       { ExecSwap's stub and memory control block, left while a game runs }
   ScriptOverheadKB = 5; { COMMAND.COM, when running before/after commands }
 
 { Conventional memory a game would get once GameMinder is swapped out, in KB }
