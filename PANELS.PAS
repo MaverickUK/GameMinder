@@ -10,6 +10,9 @@ procedure drawPanel;
 
 { --------- implementation --------- }
 implementation
+{$IFDEF FPC}
+{$ASMMODE INTEL}
+{$ENDIF}
 uses
     Crt,
     Dos,
@@ -76,14 +79,57 @@ begin
   ConventionalMemoryKB := regs.AX;
 end;
 
-{ Free memory in GameMinder's heap }
-function HeapFree:longint;
+{ Free extended (XMS) memory in KB, 0 if there's no XMS driver }
+function XmsFreeKB:longint;
+var
+  regs:Registers;
+  entry:pointer;
+  freeKB:word;
 begin
-  {$IFDEF FPC}
-  HeapFree := GetHeapStatus.TotalFree;
-  {$ELSE}
-  HeapFree := MemAvail;
-  {$ENDIF}
+  XmsFreeKB := 0;
+
+  regs.AX := $4300; { Is an XMS driver such as HIMEM.SYS installed? }
+  Intr($2F, regs);
+  if ( regs.AL <> $80 ) then exit;
+
+  regs.AX := $4310; { Get the driver's entry point }
+  Intr($2F, regs);
+  entry := Ptr(regs.ES, regs.BX);
+
+  { XMS functions are a far call to the entry point, not an interrupt }
+  freeKB := 0;
+  asm
+    mov ah, $08 { Query free extended memory, DX = total free KB }
+    call dword ptr [entry]
+    mov freeKB, dx
+  end;
+  XmsFreeKB := freeKB;
+end;
+
+{ Bar of free (solid) and used (shaded) memory }
+function MemoryBar(freeKB, totalKB:longint; width:byte):string;
+var
+  bar:string;
+  filled, i:integer;
+begin
+  if ( totalKB < 1 ) then totalKB := 1;
+  if ( freeKB < 0 ) then freeKB := 0;
+  filled := freeKB * width div totalKB;
+  if ( filled > width ) then filled := width;
+
+  bar[0] := chr(width);
+  for i := 1 to width do
+    if ( i <= filled ) then bar[i] := #219 else bar[i] := #176;
+  MemoryBar := bar;
+end;
+
+{ Free memory line for EMS or XMS }
+function FreeMemoryText(name:string; freeKB:longint):string;
+begin
+  if ( freeKB > 0 ) then
+    FreeMemoryText := ' ' + name + ' free: ' + ConvertToString(freeKB) + ' KB'
+  else
+    FreeMemoryText := ' ' + name + ': not available';
 end;
 
 procedure drawSystemStatus;
@@ -91,6 +137,7 @@ var
   drive:char;
   driveNumber:byte;
   total,free:longint;
+  conventionalKB,availableKB:longint;
   currentDir,firstPath:string;
 begin
   { Show the drive games are scanned from, the first one if there are several }
@@ -118,9 +165,13 @@ begin
   writeLine(' Storage free: ' + FormatBytes(free), ColorText, ColorBackground );
   blankLine;
   writeLine(' Memory Status', ColorHeadingText, ColorHeadingBackground );
-  writeLine(' Conventional RAM: ' + ConvertToString(ConventionalMemoryKB) + ' KB', ColorText, ColorBackground );
-  writeLine(' GameMinder heap free: ' + FormatBytes(HeapFree), ColorText, ColorBackground );
-  writeLine(' Free for games: ' + ConvertToString(AvailableMemoryKB) + ' KB', ColorText, ColorBackground );
+  conventionalKB := ConventionalMemoryKB;
+  availableKB := AvailableMemoryKB;
+  writeLine(' Conventional: ' + ConvertToString(availableKB) + ' of '
+            + ConvertToString(conventionalKB) + ' KB free', ColorText, ColorBackground );
+  writeLine(' ' + MemoryBar(availableKB, conventionalKB, PanelTextWidth - 1), ColorText, ColorBackground );
+  writeLine(FreeMemoryText('EMS', EmsFreeKB), ColorText, ColorBackground );
+  writeLine(FreeMemoryText('XMS', XmsFreeKB), ColorText, ColorBackground );
   blankLine;
   writeLine(' Games', ColorHeadingText, ColorHeadingBackground );
   writeLine(' Found: ' + ConvertToString(GameCount) + '  Showing: ' + ConvertToString(ViewCount),

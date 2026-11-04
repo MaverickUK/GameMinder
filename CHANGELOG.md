@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
+## [Unreleased]
+
+### Changed
+- System status (F3) shows conventional memory as a bar, solid for what's free for games and shaded for what DOS and drivers use, with free EMS and XMS memory below it. The GameMinder heap line is gone
+
 ## [0.7.0] - 2026-11-03
 
 ### Added
