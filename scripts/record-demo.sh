@@ -44,18 +44,19 @@ make_drive() {
 
 # Each key is pressed 1.2s apart, "," adds an extra pause. Keep the autotype command
 # under 255 characters, or DOSBox-X ignores the end of it:
-#   browse, help (F1), status (F3), info (F2), full screen (F4), sort by played/name,
+#   browse, help (F1), status (F3), memory map (F4), info (F2), full screen (F2 again),
+#   sort by played/name,
 #   type "keen" to filter, run Commander Keen 4 (a .BAT), quit it ("y"), check play stats,
 #   Esc clears the filter, Sort menu > Developer, Esc back, Add (Ins) Raptor, type its
 #   developer and save (F10), Theme > Turbo, Commander, Mono and keep it, Esc exits
 #   to the end screen, which DX-CAPTURE keeps recording for 3 seconds
-keys="down down f1 , f3 , f2 f4 , f9 , f5 f2 k e e n , down , enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down down a p o g e e , f10 , left left left left enter , right , right , right , enter , esc"
+keys="down down f1 , f3 , f4 , , f2 f2 , f9 , f5 f2 k e e n , down enter , , y , f2 , esc right right enter right enter , esc insert , enter , down down down a p o g e e , f10 left left left left enter , right , right , right , enter , esc"
 
 # DOSBox-X closes at the time limit, after the recording has finished. It sometimes crashes
 # while recording once a game has run (and always with -exit), so try a few times
 for attempt in 1 2 3; do
   make_drive
-  SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$dosbox" -fastlaunch -nomenu -time-limit 170 \
+  SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy "$dosbox" -fastlaunch -nomenu -time-limit 180 \
     -set "dosbox captures=$(native "$work/capture")" \
     -c "mount c \"$(native "$work/c")\"" -c "c:" -c "cls" -c "cd \\GMIND" \
     -c "autotype -w 6 -p 1.2 $keys" \
