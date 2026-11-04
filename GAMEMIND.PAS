@@ -579,6 +579,7 @@ begin
 
  { Main input loop }
   repeat
+    while not KeyPressed do PanelIdle; { e.g. scroll the memory map }
     ch:=ReadKey; { https://www.freepascal.org/docs-html/rtl/crt/readkey.html }
     previousMode := Mode;
 

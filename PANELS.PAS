@@ -7,6 +7,7 @@ Right hand panel - help, game info and system status
 interface
 
 procedure drawPanel;
+procedure PanelIdle;
 
 { --------- implementation --------- }
 implementation
@@ -219,7 +220,7 @@ begin
   next := 0;
   MapColours[0] := ColorText;
   for i := 1 to MemEntryCount do begin
-    if ( MemEntries[i].Kind = mkSystem ) then
+    if ( MemEntries[i].Kind <> mkProgram ) then
       MapColours[i] := ColorText
     else begin
       tries := 0;
@@ -240,6 +241,7 @@ begin
   if ( entry = MapFree ) then MapChar := #176         { Light shade }
   else if ( entry = MapNone ) then MapChar := #250    { Small dot }
   else if ( MemEntries[entry].Kind = mkSystem ) then MapChar := #178 { Dark shade }
+  else if ( MemEntries[entry].Kind = mkEms ) then MapChar := #177    { Medium shade }
   else MapChar := #219;                               { Solid block }
 end;
 
@@ -281,25 +283,90 @@ begin
   writeColouredLine(text, colours, ColorBackground);
 end;
 
+{ The list scrolls when there are more programs than fit }
+const
+  ScrollStepTicks = 18;  { About a second between steps (18.2 ticks a second) }
+  ScrollPauseTicks = 55; { About three seconds at the top and bottom }
+
+var
+  MapScroll:integer;     { First entry shown }
+  MapMaxScroll:integer;  { 0 when everything fits }
+  MapScrollTick:longint;
+  LastPanelMode:byte;    { To notice the memory map being opened }
+
+{ BIOS timer ticks since midnight }
+function Ticks:longint;
+begin
+  Ticks := MemL[$40:$6C];
+end;
+
 { What's loaded in conventional (low) and upper (high) memory, as it will be
   while a game runs - GameMinder is counted as just the stub it leaves }
 procedure drawMemoryPanel;
 const
-  LinesBeforeList = 7;
+  LinesBeforeList = 7;    { Heading, 4 map rows, upper memory, list heading }
+  LinesAfterList = 2;     { Free memory and the footnote }
+  MinListRows = 3;
 var
-  i, row, listRows, shown, used:integer;
-  name:string;
+  i, listRows, totalRows, messageCount:integer;
+  name, heading:string;
+  game:PGame;
+  needKB, freeKB:longint;
+  messages:array[1..4] of string;
+  messageColours:array[1..4] of byte;
+
+  procedure AddMessage(text:string; colour:byte);
+  begin
+    inc(messageCount);
+    messages[messageCount] := text;
+    messageColours[messageCount] := colour;
+  end;
+
 begin
   ScanMemory(ResidentKB);
   AssignMapColours;
   resetLineDrawing(ColorBackground);
 
+  { Messages under the list: will the highlighted game fit, then the EMS window }
+  messageCount := 0;
+  game := HighlightedGame;
+  if ( game <> nil ) and ( game^.MemoryKB > 0 ) then begin
+    needKB := game^.MemoryKB;
+    freeKB := GameFreeKB(game);
+    name := PStr(game^.Name);
+    if ( length(name) > PanelTextWidth - 15 ) then name[0] := chr(PanelTextWidth - 15);
+    if ( needKB <= freeKB ) then begin
+      AddMessage(' ' + name + ' needs ' + ConvertToString(needKB) + ' KB', LightGreen);
+      AddMessage(' ' + #251 + ' Fits, with ' + ConvertToString(freeKB - needKB) + ' KB to spare', LightGreen);
+    end
+    else begin
+      AddMessage(' ' + name + ' needs ' + ConvertToString(needKB) + ' KB', LightRed);
+      AddMessage(' Short by ' + ConvertToString(needKB - freeKB) + ' KB - it may not run', LightRed);
+    end;
+  end;
+  if ( EmsFrameEntry > 0 ) then begin
+    AddMessage(' ' + #177 + ' Kept for EMS. If no games need EMS,', ColorText);
+    AddMessage(' NOEMS for EMM386 frees 64 KB', ColorText);
+  end;
+
+  { The list gets what's left, dropping the EMS note before it gets too short }
+  totalRows := FrameBottom - panelTop;
+  listRows := totalRows - LinesBeforeList - LinesAfterList - messageCount;
+  if ( listRows < MinListRows ) and ( messageCount > 2 ) and ( listRows < MemEntryCount ) then begin
+    dec(messageCount, 2);
+    inc(listRows, 2);
+  end;
+  if ( listRows < 1 ) then listRows := 1;
+
+  if ( MemEntryCount > listRows ) then MapMaxScroll := MemEntryCount - listRows else MapMaxScroll := 0;
+  if ( MapScroll > MapMaxScroll ) then MapScroll := 0;
+
   writeLine(' Memory Map', ColorHeadingText, ColorHeadingBackground );
 
   { Low memory, 160KB a row }
-  for row := 0 to MapLowRows - 1 do
-    drawMapRow(ConvertToString(row * MapCells * MapCellKB) + 'K',
-               longint(row) * MapCells * MapCellKB * 64, MapCellKB * 64);
+  for i := 0 to MapLowRows - 1 do
+    drawMapRow(ConvertToString(i * MapCells * MapCellKB) + 'K',
+               longint(i) * MapCells * MapCellKB * 64, MapCellKB * 64);
 
   { Upper memory, 640KB to 1MB on one row }
   if ( HasUpperMemory ) then
@@ -307,32 +374,47 @@ begin
   else
     writeLine('   UMB none', ColorText, ColorBackground );
 
-  writeLine('   ' + PadRight('Name', 12) + ' Low KB  High KB', ColorHeadingText, ColorBackground );
+  heading := '   ' + PadRight('Name', 12) + ' Low KB  High KB';
+  if ( MapMaxScroll > 0 ) then heading := PadRight(heading, PanelTextWidth - 1) + #18; { Up/down arrow }
+  writeLine(heading, ColorHeadingText, ColorBackground );
 
-  { Leave rows for free memory, the footnote, and to say if some didn't fit }
-  listRows := FrameBottom - panelTop - LinesBeforeList - 2;
-  shown := MemEntryCount;
-  if ( shown > listRows ) then shown := listRows - 1;
-
-  for i := 1 to shown do begin
+  if ( listRows > MemEntryCount ) then listRows := MemEntryCount;
+  for i := MapScroll + 1 to MapScroll + listRows do begin
     { GameMinder is shown as what it leaves while a game runs - see the footnote }
     name := MemEntries[i].Name;
     if ( name = 'GameMinder' ) then name := name + '*';
     drawMapListRow(i, name, MemEntries[i].LowBytes, MemEntries[i].HighBytes, ColorText);
   end;
-  used := LinesBeforeList + shown;
-  if ( shown < MemEntryCount ) then begin
-    writeLine('   ...and ' + ConvertToString(MemEntryCount - shown) + ' more', ColorText, ColorBackground );
-    inc(used);
-  end;
 
   drawMapListRow(MapFree, 'Free', FreeLowBytes, FreeHighBytes, ColorHeadingText);
-  inc(used);
+  for i := 1 to messageCount do
+    writeLine(messages[i], messageColours[i], ColorBackground );
 
   { Footnote on the panel's last row }
-  for i := used + 1 to FrameBottom - panelTop - 1 do blankLine;
+  for i := LinesBeforeList + listRows + 1 + messageCount + 1 to totalRows - 1 do blankLine;
   writeLine(' * ' + ConvertToString(SelfBytes div 1024) + ' KB now, swapped out for games',
             ColorText, ColorBackground );
+end;
+
+{ Called while waiting for a key: scrolls the memory map's list when it
+  doesn't all fit, pausing at the top and bottom }
+procedure PanelIdle;
+var
+  now, wait:longint;
+begin
+  if ( Mode <> ModeMemory ) or ( MapMaxScroll = 0 ) then exit;
+
+  now := Ticks;
+  if ( now < MapScrollTick ) then MapScrollTick := now; { Midnight }
+  if ( MapScroll = 0 ) or ( MapScroll = MapMaxScroll ) then
+    wait := ScrollPauseTicks
+  else
+    wait := ScrollStepTicks;
+  if ( now - MapScrollTick < wait ) then exit;
+
+  MapScrollTick := now;
+  if ( MapScroll >= MapMaxScroll ) then MapScroll := 0 else inc(MapScroll);
+  drawMemoryPanel;
 end;
 
 procedure drawInfoPanel;
@@ -400,6 +482,13 @@ end;
 { Redraw the right hand panel for the current mode }
 procedure drawPanel;
 begin
+  { Start the memory map's list at the top each time it's opened }
+  if ( Mode = ModeMemory ) and ( LastPanelMode <> ModeMemory ) then begin
+    MapScroll := 0;
+    MapScrollTick := Ticks;
+  end;
+  LastPanelMode := Mode;
+
   case( Mode ) of
     ModeHelp: drawHelpPanel;
     ModeInfo: drawInfoPanel;

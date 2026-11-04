@@ -28,7 +28,7 @@ const
   MapNone = -1;       { MapCellEntry for no usable memory, e.g. video or ROM }
 
 type
-  TMemKind = (mkSystem, mkProgram);
+  TMemKind = (mkSystem, mkProgram, mkEms);
 
   { A named owner of memory - DOS, a driver or a program - with its total
     in conventional (low) and upper (high) memory }
@@ -53,6 +53,7 @@ var
   FreeLowBytes, FreeHighBytes:longint;
   HasUpperMemory:boolean;  { True when upper memory blocks were found }
   SelfBytes:longint;       { Memory GameMinder is using now, before it's swapped out }
+  EmsFrameEntry:integer;   { Entry for the EMS page frame in upper memory, 0 if none }
 
 procedure ScanMemory(selfResidentKB:word);
 function MapCellEntry(cellStart, cellEnd:longint):integer;
@@ -66,6 +67,7 @@ const
   OwnerFree = 0;
   OwnerDos = 8;
   MaxBlocks = 1000; { Stop walking a damaged chain }
+  EmsFramePages = 4; { 16KB pages, so 64KB }
 
 { Name stored in an MCB, blank if it isn't readable text }
 function McbName(mcbSeg:word):string;
@@ -121,6 +123,34 @@ begin
   EnvironmentProgramName := path;
 end;
 
+function HexWord(value:word):string;
+const
+  Digits:string[16] = '0123456789ABCDEF';
+begin
+  HexWord := Digits[value shr 12 + 1] + Digits[( value shr 8 ) and 15 + 1]
+             + Digits[( value shr 4 ) and 15 + 1] + Digits[value and 15 + 1];
+end;
+
+{ Segment of the EMS page frame, 0 if there's no EMS driver }
+function EmsPageFrame:word;
+const
+  DriverName: string[8] = 'EMMXXXX0';
+var
+  regs:Registers;
+  driverSeg:word;
+  i:integer;
+begin
+  EmsPageFrame := 0;
+  { The driver's name is 10 bytes into the segment its interrupt 67h handler is in }
+  driverSeg := MemW[0:$67 * 4 + 2];
+  for i := 1 to length(DriverName) do
+    if ( Chr(Mem[driverSeg:$0A + i - 1]) <> DriverName[i] ) then exit;
+
+  regs.AH := $41; { Get page frame segment }
+  Intr($67, regs);
+  if ( regs.AH = 0 ) then EmsPageFrame := regs.BX;
+end;
+
 { Name of the program owning a block of memory }
 function OwnerName(owner:word):string;
 var
@@ -139,7 +169,8 @@ begin
   if ( name = '' ) then name := EnvironmentProgramName(owner);
   { The command shell is its own parent }
   if ( name = '' ) and ( MemW[owner:$16] = owner ) then name := 'COMMAND';
-  if ( name = '' ) then name := 'Unknown';
+  { Keep programs we can't name apart, by their segment }
+  if ( name = '' ) then name := 'Prog ' + HexWord(owner);
   OwnerName := name;
 end;
 
@@ -239,6 +270,7 @@ var
   linkChanged:boolean;
   name:string;
   blocks:integer;
+  frame:longint;
 begin
   MemEntryCount := 0;
   MemRegionCount := 0;
@@ -246,6 +278,7 @@ begin
   FreeHighBytes := 0;
   HasUpperMemory := false;
   SelfBytes := 0;
+  EmsFrameEntry := 0;
 
   { Link upper memory into the chain (DOS 5 and later), remembering the setting }
   linkChanged := false;
@@ -320,6 +353,15 @@ begin
     regs.BX := linkState;
     MsDos(regs);
   end;
+
+  { The EMS page frame: 64KB of upper memory a memory manager keeps for EMS.
+    It isn't in the chain, so it would otherwise look like video memory or ROM }
+  frame := EmsPageFrame;
+  if ( frame >= LowEndSeg ) and ( frame <= $F000 ) then begin
+    AddEntry('EMS window', mkEms, frame, EmsFramePages * 1024);
+    EmsFrameEntry := MemEntryCount;
+    HasUpperMemory := true;
+  end;
 end;
 
 { What to show for a cell of the memory map covering cellStart to cellEnd
@@ -347,8 +389,8 @@ begin
       if ( entry = MapFree ) then
         free := true
       else if ( entry > 0 ) then begin
-        if ( MemEntries[entry].Kind = mkSystem ) then
-          dos := entry
+        if ( MemEntries[entry].Kind <> mkProgram ) then
+          dos := entry { DOS or the EMS page frame }
         else if ( size > bestSize ) then begin
           bestProgram := entry;
           bestSize := size;

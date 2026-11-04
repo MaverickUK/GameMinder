@@ -15,6 +15,7 @@ const
   ResidentKB = 3;          { ExecSwap's stub and memory control block, left while a game runs }
 
 function AvailableMemoryKB:longint;
+function GameFreeKB(game:PGame):longint;
 function EmsFreeKB:longint;
 function LaunchGame(game:PGame; interactive:boolean):word;
 function LaunchSetup(game:PGame; interactive:boolean):word;
@@ -51,6 +52,16 @@ begin
   inc(paragraphs, regs.BX);
 
   AvailableMemoryKB := paragraphs * 16 div 1024 - ResidentKB;
+end;
+
+{ Conventional memory a game will get, allowing for COMMAND.COM when it has
+  before/after commands - the same figure the warning before launching uses }
+function GameFreeKB(game:PGame):longint;
+begin
+  if NeedsLaunchScript(PStr(game^.Before), PStr(game^.After)) then
+    GameFreeKB := AvailableMemoryKB - ScriptOverheadKB
+  else
+    GameFreeKB := AvailableMemoryKB;
 end;
 
 { Free expanded (EMS) memory in KB, 0 if there's no EMS driver }
