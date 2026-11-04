@@ -327,10 +327,11 @@ begin
   AssignMapColours;
   resetLineDrawing(ColorBackground);
 
-  { Messages under the list: will the highlighted game fit, then the EMS window }
+  { Under the list: will the highlighted game fit }
   messageCount := 0;
   game := HighlightedGame;
   if ( game <> nil ) and ( game^.MemoryKB > 0 ) then begin
+    AddMessage('', ColorText); { Space above it }
     needKB := game^.MemoryKB;
     freeKB := GameFreeKB(game);
     if ( needKB <= freeKB ) then
@@ -340,13 +341,13 @@ begin
       AddMessage(' ! Short by ' + ConvertToString(needKB - freeKB) + ' KB: needs '
                  + ConvertToString(needKB) + ' KB', LightRed);
   end;
-  if ( EmsFrameEntry > 0 ) then
-    AddMessage(' ' + #177 + ' Unused by games? NOEMS frees 64 KB', ColorText);
 
-  { The list gets what's left, dropping the EMS note before it gets too short }
+  { The list gets what's left, losing the space above the message before it gets too short }
   totalRows := FrameBottom - panelTop;
   listRows := totalRows - LinesBeforeList - LinesAfterList - messageCount;
   if ( listRows < MinListRows ) and ( messageCount > 1 ) and ( listRows < MemEntryCount ) then begin
+    messages[1] := messages[2];
+    messageColours[1] := messageColours[2];
     dec(messageCount);
     inc(listRows);
   end;
