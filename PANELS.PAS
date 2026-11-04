@@ -287,13 +287,14 @@ procedure drawMemoryPanel;
 const
   LinesBeforeList = 7;
 var
-  i, row, listRows, shown:integer;
+  i, row, listRows, shown, used:integer;
+  name:string;
 begin
   ScanMemory(ResidentKB);
   AssignMapColours;
   resetLineDrawing(ColorBackground);
 
-  writeLine(' Memory Map - while a game runs', ColorHeadingText, ColorHeadingBackground );
+  writeLine(' Memory Map', ColorHeadingText, ColorHeadingBackground );
 
   { Low memory, 160KB a row }
   for row := 0 to MapLowRows - 1 do
@@ -308,19 +309,30 @@ begin
 
   writeLine('   ' + PadRight('Name', 12) + ' Low KB  High KB', ColorHeadingText, ColorBackground );
 
-  { Leave a row for free memory, and one to say if some didn't fit }
-  listRows := FrameBottom - panelTop - LinesBeforeList - 1;
+  { Leave rows for free memory, the footnote, and to say if some didn't fit }
+  listRows := FrameBottom - panelTop - LinesBeforeList - 2;
   shown := MemEntryCount;
   if ( shown > listRows ) then shown := listRows - 1;
 
-  for i := 1 to shown do
-    drawMapListRow(i, MemEntries[i].Name, MemEntries[i].LowBytes, MemEntries[i].HighBytes, ColorText);
-  if ( shown < MemEntryCount ) then
+  for i := 1 to shown do begin
+    { GameMinder is shown as what it leaves while a game runs - see the footnote }
+    name := MemEntries[i].Name;
+    if ( name = 'GameMinder' ) then name := name + '*';
+    drawMapListRow(i, name, MemEntries[i].LowBytes, MemEntries[i].HighBytes, ColorText);
+  end;
+  used := LinesBeforeList + shown;
+  if ( shown < MemEntryCount ) then begin
     writeLine('   ...and ' + ConvertToString(MemEntryCount - shown) + ' more', ColorText, ColorBackground );
+    inc(used);
+  end;
 
   drawMapListRow(MapFree, 'Free', FreeLowBytes, FreeHighBytes, ColorHeadingText);
+  inc(used);
 
-  blankRemainingLines;
+  { Footnote on the panel's last row }
+  for i := used + 1 to FrameBottom - panelTop - 1 do blankLine;
+  writeLine(' * ' + ConvertToString(SelfBytes div 1024) + ' KB now, swapped out for games',
+            ColorText, ColorBackground );
 end;
 
 procedure drawInfoPanel;

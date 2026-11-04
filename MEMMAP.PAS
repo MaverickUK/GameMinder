@@ -52,6 +52,7 @@ var
   MemRegionCount:integer;
   FreeLowBytes, FreeHighBytes:longint;
   HasUpperMemory:boolean;  { True when upper memory blocks were found }
+  SelfBytes:longint;       { Memory GameMinder is using now, before it's swapped out }
 
 procedure ScanMemory(selfResidentKB:word);
 function MapCellEntry(cellStart, cellEnd:longint):integer;
@@ -244,6 +245,7 @@ begin
   FreeLowBytes := 0;
   FreeHighBytes := 0;
   HasUpperMemory := false;
+  SelfBytes := 0;
 
   { Link upper memory into the chain (DOS 5 and later), remembering the setting }
   linkChanged := false;
@@ -306,6 +308,8 @@ begin
 
     if ( mcb >= LowEndSeg ) and ( owner <> 6 ) and ( owner <> 7 ) then
       HasUpperMemory := true;
+
+    if ( owner = PrefixSeg ) then inc(SelfBytes, ( paragraphs + 1 ) * 16);
 
     mcb := mcb + paragraphs + 1;
     inc(blocks);
