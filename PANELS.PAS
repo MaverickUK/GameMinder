@@ -312,8 +312,8 @@ var
   name, heading:string;
   game:PGame;
   needKB, freeKB:longint;
-  messages:array[1..4] of string;
-  messageColours:array[1..4] of byte;
+  messages:array[1..2] of string;
+  messageColours:array[1..2] of byte;
 
   procedure AddMessage(text:string; colour:byte);
   begin
@@ -333,28 +333,22 @@ begin
   if ( game <> nil ) and ( game^.MemoryKB > 0 ) then begin
     needKB := game^.MemoryKB;
     freeKB := GameFreeKB(game);
-    name := PStr(game^.Name);
-    if ( length(name) > PanelTextWidth - 15 ) then name[0] := chr(PanelTextWidth - 15);
-    if ( needKB <= freeKB ) then begin
-      AddMessage(' ' + name + ' needs ' + ConvertToString(needKB) + ' KB', LightGreen);
-      AddMessage(' ' + #251 + ' Fits, with ' + ConvertToString(freeKB - needKB) + ' KB to spare', LightGreen);
-    end
-    else begin
-      AddMessage(' ' + name + ' needs ' + ConvertToString(needKB) + ' KB', LightRed);
-      AddMessage(' Short by ' + ConvertToString(needKB - freeKB) + ' KB - it may not run', LightRed);
-    end;
+    if ( needKB <= freeKB ) then
+      AddMessage(' ' + #251 + ' Fits: needs ' + ConvertToString(needKB) + ' KB, '
+                 + ConvertToString(freeKB - needKB) + ' KB spare', LightGreen)
+    else
+      AddMessage(' ! Short by ' + ConvertToString(needKB - freeKB) + ' KB: needs '
+                 + ConvertToString(needKB) + ' KB', LightRed);
   end;
-  if ( EmsFrameEntry > 0 ) then begin
-    AddMessage(' ' + #177 + ' Kept for EMS. If no games need EMS,', ColorText);
-    AddMessage(' NOEMS for EMM386 frees 64 KB', ColorText);
-  end;
+  if ( EmsFrameEntry > 0 ) then
+    AddMessage(' ' + #177 + ' Unused by games? NOEMS frees 64 KB', ColorText);
 
   { The list gets what's left, dropping the EMS note before it gets too short }
   totalRows := FrameBottom - panelTop;
   listRows := totalRows - LinesBeforeList - LinesAfterList - messageCount;
-  if ( listRows < MinListRows ) and ( messageCount > 2 ) and ( listRows < MemEntryCount ) then begin
-    dec(messageCount, 2);
-    inc(listRows, 2);
+  if ( listRows < MinListRows ) and ( messageCount > 1 ) and ( listRows < MemEntryCount ) then begin
+    dec(messageCount);
+    inc(listRows);
   end;
   if ( listRows < 1 ) then listRows := 1;
 
