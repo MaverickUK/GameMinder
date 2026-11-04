@@ -304,7 +304,7 @@ end;
   while a game runs - GameMinder is counted as just the stub it leaves }
 procedure drawMemoryPanel;
 const
-  LinesBeforeList = 7;    { Heading, 4 map rows, upper memory, list heading }
+  LinesBeforeList = 8;    { Heading, 4 map rows, upper memory, a space, list heading }
   LinesAfterList = 2;     { Free memory and the footnote }
   MinListRows = 3;
 var
@@ -368,6 +368,7 @@ begin
     drawMapRow('UMB', LowEndSeg, ( $10000 - LowEndSeg ) div MapCells)
   else
     writeLine('   UMB none', ColorText, ColorBackground );
+  blankLine;
 
   heading := '   ' + PadRight('Name', 12) + ' Low KB  High KB';
   if ( MapMaxScroll > 0 ) then heading := PadRight(heading, PanelTextWidth - 1) + #18; { Up/down arrow }
