@@ -13,6 +13,7 @@ While below 1.0.0, MINOR versions add features or change file formats and PATCH 
 - Memory map (F4): what's loaded in memory while a game runs, like `MEM /C`. A map of conventional memory in 5KB blocks, with upper memory below it, shows each driver and program in its own colour, DOS shaded dark and free memory light. Below it a list of DOS, device drivers such as HIMEM and EMM386, TSRs such as MOUSE and MSCDEX, and GameMinder, with how much each uses in low and high memory. GameMinder is shown as the few KB it leaves behind when a game runs, so free memory matches the Status panel, with a note of what it uses until it's swapped out. If the highlighted game has `memory:` set, it says whether the game fits and by how much. EMM386's 64KB EMS page frame shows in upper memory. When there are more programs than fit, the list scrolls slowly. On DOS 3, which doesn't record program names, names come from each program's environment. `DefaultView:Memory` in `SETTINGS.TXT` opens it on startup
 
 ### Changed
+- Disk and memory sizes are shown with commas between groups of three digits, e.g. 1,015 MB and 15,168 KB, in the panels, the memory warning before launching a game and the startup screen
 - Full screen is no longer on F4. Press the key for the panel that's showing (F1-F4) again to switch to the full screen games list, and once more to go back
 - System status (F3) shows conventional memory as a bar, solid for what's free for games and shaded for what DOS and drivers use, with free EMS and XMS memory below it. The GameMinder heap line is gone
 

@@ -486,10 +486,10 @@ begin
 
   ems := EmsFreeKB;
   if ( ems > 0 ) then
-    StartupLine('Z_Init: ' + ConvertToString(AvailableMemoryKB) + 'KB conventional, ' +
-      ConvertToString(ems) + 'KB EMS free for games')
+    StartupLine('Z_Init: ' + GroupDigits(AvailableMemoryKB) + 'KB conventional, ' +
+      GroupDigits(ems) + 'KB EMS free for games')
   else
-    StartupLine('Z_Init: ' + ConvertToString(AvailableMemoryKB) + 'KB conventional memory free for games');
+    StartupLine('Z_Init: ' + GroupDigits(AvailableMemoryKB) + 'KB conventional memory free for games');
 
   StartupText('W_Init: ');
   ShowScanProgress := true;

@@ -164,9 +164,9 @@ begin
   end
   else begin
     if ( EmsAllocated ) then
-      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to EMS')
+      VerboseWriteln('GameMinder swapped ' + GroupDigits(BytesSwapped) + ' bytes to EMS')
     else
-      VerboseWriteln('GameMinder swapped ' + ConvertToString(BytesSwapped) + ' bytes to ' + TempDir + SwapFileName);
+      VerboseWriteln('GameMinder swapped ' + GroupDigits(BytesSwapped) + ' bytes to ' + TempDir + SwapFileName);
     writeln('');
     SwapVectors;
     Status := ExecWithSwap(prog, args);
@@ -198,8 +198,8 @@ begin
 
   TextColor(Yellow);
   writeln('');
-  writeln(PStr(game^.Name), ' needs ', game^.MemoryKB, 'KB of conventional memory,');
-  writeln('but only about ', available, 'KB will be free. It may not run.');
+  writeln(PStr(game^.Name), ' needs ', GroupDigits(game^.MemoryKB), 'KB of conventional memory,');
+  writeln('but only about ', GroupDigits(available), 'KB will be free. It may not run.');
   TextColor(White);
 
   if ( interactive ) then begin

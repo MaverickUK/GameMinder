@@ -130,7 +130,7 @@ end;
 function FreeMemoryText(name:string; freeKB:longint):string;
 begin
   if ( freeKB > 0 ) then
-    FreeMemoryText := ' ' + name + ' free: ' + ConvertToString(freeKB) + ' KB'
+    FreeMemoryText := ' ' + name + ' free: ' + GroupDigits(freeKB) + ' KB'
   else
     FreeMemoryText := ' ' + name + ': not available';
 end;
@@ -170,8 +170,8 @@ begin
   writeLine(' Memory Status', ColorHeadingText, ColorHeadingBackground );
   conventionalKB := ConventionalMemoryKB;
   availableKB := AvailableMemoryKB;
-  writeLine(' Conventional: ' + ConvertToString(availableKB) + ' of '
-            + ConvertToString(conventionalKB) + ' KB free', ColorText, ColorBackground );
+  writeLine(' Conventional: ' + GroupDigits(availableKB) + ' of '
+            + GroupDigits(conventionalKB) + ' KB free', ColorText, ColorBackground );
   writeLine(' ' + MemoryBar(availableKB, conventionalKB, PanelTextWidth - 1), ColorText, ColorBackground );
   writeLine(FreeMemoryText('EMS', EmsFreeKB), ColorText, ColorBackground );
   writeLine(FreeMemoryText('XMS', XmsFreeKB), ColorText, ColorBackground );
@@ -192,8 +192,8 @@ var
   text:string;
 begin
   if ( bytes = 0 ) then text := ''
-  else if ( roundUp ) then text := ConvertToString(( bytes + 1023 ) div 1024)
-  else text := ConvertToString(bytes div 1024);
+  else if ( roundUp ) then text := GroupDigits(( bytes + 1023 ) div 1024)
+  else text := GroupDigits(bytes div 1024);
   while ( length(text) < width ) do text := ' ' + text;
   MapKB := text;
 end;
@@ -335,11 +335,11 @@ begin
     needKB := game^.MemoryKB;
     freeKB := GameFreeKB(game);
     if ( needKB <= freeKB ) then
-      AddMessage(' ' + #251 + ' Fits: needs ' + ConvertToString(needKB) + ' KB, '
-                 + ConvertToString(freeKB - needKB) + ' KB spare', LightGreen)
+      AddMessage(' ' + #251 + ' Fits: needs ' + GroupDigits(needKB) + ' KB, '
+                 + GroupDigits(freeKB - needKB) + ' KB spare', LightGreen)
     else
-      AddMessage(' ! Short by ' + ConvertToString(needKB - freeKB) + ' KB: needs '
-                 + ConvertToString(needKB) + ' KB', LightRed);
+      AddMessage(' ! Short by ' + GroupDigits(needKB - freeKB) + ' KB: needs '
+                 + GroupDigits(needKB) + ' KB', LightRed);
   end;
 
   { The list gets what's left, losing the space above the message before it gets too short }
@@ -388,7 +388,7 @@ begin
 
   { Footnote on the panel's last row }
   for i := LinesBeforeList + listRows + 1 + messageCount + 1 to totalRows - 1 do blankLine;
-  writeLine(' * ' + ConvertToString(SelfBytes div 1024) + ' KB now, swapped out for games',
+  writeLine(' * ' + GroupDigits(SelfBytes div 1024) + ' KB now, swapped out for games',
             ColorText, ColorBackground );
 end;
 
@@ -446,10 +446,10 @@ begin
   if ( game^.MemoryKB > 0 ) then begin
     available := AvailableMemoryKB;
     if ( game^.MemoryKB > available ) then
-      writeLine(' Memory: ' + ConvertToString(game^.MemoryKB) + 'KB - only '
-                + ConvertToString(available) + 'KB free', ColorHeadingText, ColorBackground )
+      writeLine(' Memory: ' + GroupDigits(game^.MemoryKB) + 'KB - only '
+                + GroupDigits(available) + 'KB free', ColorHeadingText, ColorBackground )
     else
-      writeLine(' Memory: ' + ConvertToString(game^.MemoryKB) + 'KB', ColorText, ColorBackground );
+      writeLine(' Memory: ' + GroupDigits(game^.MemoryKB) + 'KB', ColorText, ColorBackground );
   end;
   blankLine;
   writeLine(' Path: ' + PStr(game^.Path), ColorText, ColorBackground );

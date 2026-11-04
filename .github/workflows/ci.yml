@@ -195,7 +195,7 @@ jobs:
           echo "Free memory for a game with before/after commands: ${script}KB (DOS prompt ${base}KB)"
           grep -q before BEFORE.TXT
           grep -q after AFTER.TXT
-          grep -q "needs 1000KB" RUNSCRPT.TXT
+          grep -q "needs 1,000KB" RUNSCRPT.TXT
           # COMMAND.COM runs the before/after commands, so allow a little more
           [ $((base - script)) -le 16 ]
 
