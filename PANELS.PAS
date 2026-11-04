@@ -492,6 +492,8 @@ begin
     ModeMemory: drawMemoryPanel;
     { ModeFullScreen: games list uses whole screen }
   end;
+
+  DrawFooter; { Highlights the panel's key }
 end;
 
 end.

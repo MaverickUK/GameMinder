@@ -534,6 +534,7 @@ begin
   StartupLine('L_Init: Sorting by ' + SortModeName(DefaultSort));
   SortGames(DefaultSort);
   Mode := DefaultView;
+  FullScreenFrom := ModeInfo; { For the footer, if starting full screen }
 
   StartupLine(FlavourLine);
   StartupLine('D_GameLoop: Ready');
@@ -544,8 +545,10 @@ end;
 { Show a right hand panel, or the full screen games list if it's already showing }
 procedure SelectPanel(panel:byte);
 begin
-  if ( Mode = panel ) then
-    Mode := ModeFullScreen
+  if ( Mode = panel ) then begin
+    FullScreenFrom := panel;
+    Mode := ModeFullScreen;
+  end
   else
     Mode := panel;
 end;
