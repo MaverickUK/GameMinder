@@ -505,19 +505,12 @@ begin
     TextColor(White);
   end;
 
+  { Carry on without games - the Info panel explains how to add them }
   if ( GameCount = 0 ) then begin
-    TextColor(Red);
-    writeln('');
-    writeln('No ', InfoFileName, ' files found under any directories in ', ScanPath );
-    writeln('');
-    writeln('Each game needs to have a ', InfoFileName, ' file added which contains');
-    writeln('details about the game GameMinder needs in order to detect it.');
-    writeln('');
-    writeln('Please read the QUICKSTART.md file for instructions on to create these files');
-    writeln('or visit https://github.com/MaverickUK/GameMinder');
-    TextColor(White);
-    DoneGames;
-    Halt(1);
+    TextColor(Yellow);
+    writeln('        No games with a ', InfoFileName, ' file in ', ScanPath);
+    writeln('        Choose Add to add your first game');
+    TextColor(LightGray);
   end;
 
   if ( EnablePlayStats ) then begin
@@ -535,6 +528,7 @@ begin
   SortGames(DefaultSort);
   Mode := DefaultView;
   FullScreenFrom := ModeInfo; { For the footer, if starting full screen }
+  if ( GameCount = 0 ) then Mode := ModeInfo; { Show the welcome }
 
   StartupLine(FlavourLine);
   StartupLine('D_GameLoop: Ready');
@@ -545,12 +539,22 @@ end;
 { Show a right hand panel, or the full screen games list if it's already showing }
 procedure SelectPanel(panel:byte);
 begin
-  if ( Mode = panel ) then begin
+  if ( Mode = panel ) and ( GameCount > 0 ) then begin
     FullScreenFrom := panel;
     Mode := ModeFullScreen;
   end
   else
     Mode := panel;
+end;
+
+{ With no games, e.g. after removing the last one, only what can add games
+  is usable: no filter, no full screen list, and the Info panel's welcome }
+procedure CheckNoGames;
+begin
+  if ( GameCount > 0 ) then exit;
+  if ( length(CurrentFilter) > 0 ) then SetFilter('');
+  if ( Mode = ModeFullScreen ) then Mode := ModeInfo;
+  CheckMenuEnabled;
 end;
 
 { ================== Main program loop ================== }
@@ -575,6 +579,7 @@ begin
   runMainLoop := true; { When false, GameMinder will exit }
 
   Startup;
+  CheckNoGames;
 
   ApplyScreenMode;
   HideCursor;
@@ -591,6 +596,7 @@ begin
             { https://www.freepascal.org/docs-html/rtl/keyboard/kbdscancode.html
              Remember to convert hex to dec e.g. 4B = 75 }
             ch:=ReadKey; {Read ScanCode}
+            if ( GameCount = 0 ) and ( ch in [#63..#68] ) then ch := #0; { No games to sort }
             case ch of
             {(( Games ))}
              #72 : scrollTo(offset - 1); { Up }
@@ -626,7 +632,7 @@ begin
           end;
     #13: begin  { Enter }
             GetMenuItem(hMenu, hIndex, item);
-
+            if MenuItemEnabled(hMenu, hIndex) then
             case item.Action of
               { --- Primary --- }
               maRun: if HasSetup(HighlightedGame) then
@@ -683,13 +689,15 @@ begin
           SetFilter(copy(CurrentFilter, 1, length(CurrentFilter) - 1));
       end;
     #32..#126: begin { Type to filter }
-        if ( length(CurrentFilter) < MaxFilterLength ) then
+        if ( GameCount > 0 ) and ( length(CurrentFilter) < MaxFilterLength ) then
           SetFilter(CurrentFilter + ch);
       end;
     end;
 
     { Redraw routines after input }
     if not runMainLoop then break;
+
+    CheckNoGames;
 
     { The Run menu is only for games with a setup program }
     if ( hMenu = MenuRun ) and not HasSetup(HighlightedGame) then

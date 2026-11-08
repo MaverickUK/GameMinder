@@ -413,6 +413,34 @@ begin
   drawMemoryPanel;
 end;
 
+{ Text wrapped to the panel's width }
+procedure writeWrapped(text:string; textColour:byte);
+begin
+  while ( length(text) > 0 ) do
+    writeLine(' ' + WrapText(text, PanelTextWidth), textColour, ColorBackground );
+end;
+
+{ Shown in place of game info when there are no games yet }
+procedure drawWelcomePanel;
+begin
+  writeLine(' Welcome to ' + ApplicationName, ColorHeadingText, ColorHeadingBackground );
+  blankLine;
+  writeWrapped('No games found yet in ' + ScanPath, ColorText);
+  blankLine;
+  writeLine(' Add your first game', ColorHeadingText, ColorHeadingBackground );
+  writeWrapped('Choose Add from the menu above, or press Ins.', ColorText);
+  blankLine;
+  writeWrapped('GameMinder lists the directories there with a program in. Pick your' +
+               ' game''s directory, check its details and they''re saved to a ' +
+               InfoFileName + ' file in it.', ColorText);
+  blankLine;
+  writeLine(' Games somewhere else?', ColorHeadingText, ColorHeadingBackground );
+  writeWrapped('Change ScanPath in ' + SettingsFileName + ', then choose Rescan.', ColorText);
+  blankLine;
+  writeWrapped('More help in QUICKSTART.md or at github.com/MaverickUK/GameMinder', ColorText);
+  blankRemainingLines;
+end;
+
 procedure drawInfoPanel;
 var
   game:PGame;
@@ -421,6 +449,11 @@ var
 begin
   game := HighlightedGame;
   resetLineDrawing(ColorBackground);
+
+  if ( GameCount = 0 ) then begin
+    drawWelcomePanel;
+    exit;
+  end;
 
   if ( game = nil ) then begin
     writeLine(' No games found', ColorHeadingText, ColorHeadingBackground );

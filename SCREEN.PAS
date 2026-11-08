@@ -34,6 +34,7 @@ procedure writeColouredLine(text:string; colours:string; backColour:byte);
 procedure drawFrame(mode:byte; drawMode:TDrawScreenMode; x1,y1,x2,y2:byte);
 procedure SetupScreen(drawMode:TDrawScreenMode);
 procedure DrawFooter;
+function DisabledColor:byte;
 procedure HideCursor;
 procedure ShowCursor;
 
@@ -260,6 +261,7 @@ end;
 
 procedure RenderSortBy;
 begin
+  if ( GameCount = 0 ) then exit; { Nothing to sort }
   gotoxy(5,FrameBottom);
   write(#185, ' Sorted by ', SortModeName(CurrentSort), ' ', #204);
 end;
@@ -290,6 +292,12 @@ begin
 end;
 
 { ////////////////// Footer ////////////////// }
+
+{ Text colour for menu options and keys that don't work without games }
+function DisabledColor:byte;
+begin
+  DisabledColor := DarkGray;
+end;
 
 { Bottom row: the panel keys (F1-F4) with the one showing highlighted, and
   the sort keys (F5-F10) apart on the right in their own colour }
@@ -381,6 +389,10 @@ begin
   if ( length(text) > columns - length(SortText) - 1 ) then text[0] := chr(columns - length(SortText) - 1);
   while ( length(text) < columns - length(SortText) - 1 ) do Add(' ', ColorText);
   colours[0] := text[0];
+  if ( GameCount = 0 ) then begin { Nothing to sort }
+    sortLabel := DisabledColor;
+    sortKey := DisabledColor;
+  end;
   Add(#179, sortLabel); { Thin vertical line }
   Add(' ', sortLabel);
   Add('F5-F10', sortKey);

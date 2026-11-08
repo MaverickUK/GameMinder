@@ -8,7 +8,7 @@
 4. Add your games: run GameMinder and choose **Add** (or press Ins) to pick a game directory and fill in its details. Or create a **!GM_INFO.TXT** file in each game's directory yourself (see below)
 5. Run `GAMEMIND`. You can run it from any directory, e.g. `C:\GMIND\GAMEMIND`
 
-If no games are found, GameMinder lists the directory it searched and exits. Check `ScanPath`, and that each game has a `!GM_INFO.TXT`.
+If no games are found, GameMinder still starts and shows a welcome message explaining how to add one. Only **Add**, **Rescan**, **Theme** and **Exit** can be used until there's a game. If your games are already set up, check `ScanPath` and that each game has a `!GM_INFO.TXT`, then choose **Rescan**.
 
 ## !GM_INFO.TXT format
 
