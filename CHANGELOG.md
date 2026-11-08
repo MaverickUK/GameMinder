@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and GameMinder uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 While below 1.0.0, MINOR versions add features or change file formats and PATCH versions only fix bugs.
 
-## [Unreleased]
+## [0.8.1] - 2026-11-08
 
 ### Fixed
 - GameMinder starts when no games are found, rather than listing the directory it searched and exiting. The Info panel (F2) shows a welcome explaining how to add your first game with **Add** (or Ins), or to change `ScanPath` and choose **Rescan**. Until there's a game, Run, Filter, Sort, Edit and Delete are greyed out and skipped, and the sort keys (F5-F10), typing to filter and full screen do nothing. Removing the last game goes back to the welcome
@@ -153,6 +153,7 @@ Initial preview release.
 - Colour theme settings
 - Setting to turn off play stats
 
+[0.8.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.8.1
 [0.8.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.8.0
 [0.7.0]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.7.0
 [0.6.1]: https://github.com/MaverickUK/GameMinder/releases/tag/v0.6.1
