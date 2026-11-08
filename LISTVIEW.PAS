@@ -121,7 +121,9 @@ begin
       TextColor(ColorText);
     end;
 
-    if ( game = nil ) then begin
+    if ( GameCount = 0 ) and ( row = listMinRow ) then
+      write(PadRight('No games yet', nameWidth + 1))
+    else if ( game = nil ) then begin
       { No game - show blank row }
       if ( Mode = ModeFullScreen ) then
         write(PadRight(BlankLineFilter, columns - listStartColumn))

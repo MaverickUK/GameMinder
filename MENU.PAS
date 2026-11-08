@@ -20,6 +20,7 @@ const
   PrimaryRunIndex = 0;
   PrimaryFilterIndex = 1;
   PrimarySortIndex = 2;
+  PrimaryAddIndex = 3;
   PrimaryThemeIndex = 7;
 
 type
@@ -42,6 +43,8 @@ var
   hIndex:byte;  { Highlighted option within that menu }
 
 procedure GetMenuItem(menu:byte; index:byte; var item:TMenuItem);
+function MenuItemEnabled(menu:byte; index:byte):boolean;
+procedure CheckMenuEnabled;
 procedure renderHorizonalMenu;
 procedure changeHorizonalMenu(movement:shortint);
 procedure showMenu(menu:byte; index:byte);
@@ -113,6 +116,29 @@ begin
   else
     item := PrimaryMenu[index];
   end;
+end;
+
+{ With no games, only the options that can add or find some, Theme and Exit work }
+function MenuItemEnabled(menu:byte; index:byte):boolean;
+var
+  item:TMenuItem;
+begin
+  MenuItemEnabled := true;
+  if ( GameCount > 0 ) then exit;
+
+  if ( menu = MenuSort ) or ( menu = MenuFilter ) or ( menu = MenuRun ) then
+    MenuItemEnabled := false
+  else if ( menu = MenuPrimary ) then begin
+    GetMenuItem(menu, index, item);
+    MenuItemEnabled := item.Action in [maAdd, maRescan, maTheme, maExit];
+  end;
+end;
+
+{ Move off an option that no longer works, e.g. after the last game is removed }
+procedure CheckMenuEnabled;
+begin
+  if ( hMenu = MenuTheme ) then exit;
+  if not MenuItemEnabled(hMenu, hIndex) then showMenu(MenuPrimary, PrimaryAddIndex);
 end;
 
 procedure setMenuColours(highlighted:boolean);
@@ -188,6 +214,7 @@ begin
   for i := 0 to MenuCount(menu) - 1 do begin
     GetMenuItem(menu, i, item);
     setMenuColours(i = index);
+    if not MenuItemEnabled(menu, i) then TextColor(DisabledColor);
     write(item.Caption);
 
     TextColor(ColorText);
@@ -223,14 +250,21 @@ begin
   write(ApplicationName);
 end;
 
-{ Change selected horizonal menu option, looping round }
+{ Change selected horizonal menu option, looping round and skipping
+  options that don't work without games }
 procedure changeHorizonalMenu(movement:shortint);
 var
   desired:integer;
+  tries:byte;
 begin
-  desired := hIndex + movement;
-  if ( desired < 0 ) then desired := MenuCount(hMenu) - 1;
-  if ( desired >= MenuCount(hMenu) ) then desired := 0;
+  desired := hIndex;
+  tries := 0;
+  repeat
+    desired := desired + movement;
+    if ( desired < 0 ) then desired := MenuCount(hMenu) - 1;
+    if ( desired >= MenuCount(hMenu) ) then desired := 0;
+    inc(tries);
+  until MenuItemEnabled(hMenu, desired) or ( tries >= MenuCount(hMenu) );
   hIndex := desired;
 end;
 
