@@ -86,6 +86,31 @@ jobs:
           build tests/MEMFREE.PAS build/dos/MEMFREE.EXE
           ls -l build/dos/*.EXE
 
+      - name: Compare EXE sizes with other compiler options
+        run: |
+          PPC=$(find "$HOME/fpc-msdos" -name ppcross8086 -type f | head -1)
+          SYSTEM_PPU=$(find "$HOME/fpc-msdos" -path '*msdos*' -name system.ppu | head -1)
+          UNITS=$(dirname "$(dirname "$SYSTEM_PPU")")
+          variant() {
+            name=$1; shift
+            mkdir -p "build/variants/$name"
+            "$PPC" -Tmsdos -WmLarge -Mtp "$@" \
+              -Fu. -FuEXECSWAP/FPC -FoEXECSWAP/FPC -Fu"$UNITS/*" \
+              -FU"build/variants/$name" -o"build/variants/$name/GAMEMIND.EXE" GAMEMIND.PAS > /dev/null
+            printf '%-14s %8d bytes   (%s)\n' "$name" \
+              "$(stat -c %s "build/variants/$name/GAMEMIND.EXE")" "$*"
+          }
+          variant O2       -O2
+          variant O2-smart -O2 -CX -XX
+          variant Os       -Os
+          variant Os-smart -Os -CX -XX
+          variant O3-smart -O3 -CX -XX
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gamemind-variants
+          path: build/variants/*/GAMEMIND.EXE
+
       - name: Show memory layout
         run: |
           # ExecSwap keeps everything below FirstToSave in memory while a game runs,
